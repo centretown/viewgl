@@ -11,3 +11,18 @@ add_library(imguigl
 
 target_include_directories(imguigl
     PUBLIC ../external/imgui/ ../external/imgui/backends)
+
+add_library(davegl
+    ../glad/src/glad.c
+    ../src/camera.cpp
+    ../src/win.cpp
+    ../src/input_options.cpp
+    ../src/shader.cpp
+    ../src/lights.cpp
+    ../src/texture.cpp)
+
+target_include_directories(davegl
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/cxxopts/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/glad)
