@@ -1,20 +1,16 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <glad.h>
+// #define USE_IMGUI
+
+#include "glad.h"
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <GLFW/glfw3.h>
 
 // Defines several possible options for camera movement. Used as abstraction to
 // stay away from window-system specific input methods
-enum Camera_Movement
-{
-  FORWARD,
-  BACKWARD,
-  LEFT,
-  RIGHT
-};
+enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 
 // Default camera values
 const float YAW = -90.0f;
@@ -27,8 +23,7 @@ const float ZOOM = 45.0f;
 
 // An abstract camera class that processes input and calculates the
 // corresponding Euler Angles, Vectors and Matrices for use in OpenGL
-class Camera
-{
+class Camera {
 public:
   // camera Attributes
   glm::vec3 Position;
@@ -44,7 +39,11 @@ public:
   float MouseSensitivity;
   float Zoom;
   float lastFrame = 0.0f; // Time of last frame
-  float rotation_angle = 0.0f;
+
+  float rotation_angleY = 0.0f;
+  float rotation_angleX = 0.0f;
+  float rotation_angleZ = 0.0f;
+
   float windowWidth = (float)DEFAULT_SCREEN_WIDTH;
   float windowHeight = (float)DEFAULT_SCREEN_HEIGHT;
 
@@ -52,8 +51,7 @@ public:
          glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
          float pitch = PITCH)
       : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
-  {
+        MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
     Position = position;
     WorldUp = up;
     Yaw = yaw;
@@ -65,8 +63,7 @@ public:
   Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
          float yaw, float pitch)
       : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
-  {
+        MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
     Position = glm::vec3(posX, posY, posZ);
     WorldUp = glm::vec3(upX, upY, upZ);
     Yaw = yaw;
@@ -93,11 +90,11 @@ public:
   void ProcessMouseScroll(float yoffset);
 
   void ProcessInput(GLFWwindow *window);
+  void ProcessInputImGui(GLFWwindow *window);
 
-  float rotationAngle() { return rotation_angle; }
+  float rotationAngle() { return rotation_angleY; }
 
-  void ResizeWindow(int width, int height)
-  {
+  void ResizeWindow(int width, int height) {
     windowWidth = (float)width;
     windowHeight = (float)height;
   }

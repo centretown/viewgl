@@ -2,50 +2,57 @@
 #include "win.hpp"
 #include "glad.h"
 
-// #define USE_OPEN_GLES
+Camera *currentCamera = NULL;
+WinState *winState = NULL;
 
-WinState winState;
+float lastX = 0.0f;
+float lastY = 0.0f;
+bool firstMouse = true;
+bool leftButtonDown = false;
 
 void mouse_button_callback(GLFWwindow *window, int button, int action,
                            int mods) {
-  winState.leftButtonDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == 1);
+  leftButtonDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == 1);
 }
 
-// glfw: whenever the mouse moves, this callback is called
-// -------------------------------------------------------
 void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
+  if (winState->showPanel)
+    return;
   float xpos = static_cast<float>(xposIn);
   float ypos = static_cast<float>(yposIn);
 
-  if (winState.firstMouse) {
-    winState.lastX = xpos;
-    winState.lastY = ypos;
-    winState.firstMouse = false;
+  if (firstMouse) {
+    lastX = xpos;
+    lastY = ypos;
+    firstMouse = false;
   }
 
-  float xoffset = xpos - winState.lastX;
-  float yoffset = winState.lastY -
-                  ypos; // reversed since y-coordinates go from bottom to top
+  float xoffset = xpos - lastX;
+  float yoffset =
+      lastY - ypos; // reversed since y-coordinates go from bottom to top
 
-  winState.lastX = xpos;
-  winState.lastY = ypos;
-  if (winState.leftButtonDown)
-    winState.camera->ProcessMouseMovement(-xoffset, -yoffset);
+  lastX = xpos;
+  lastY = ypos;
+  if (leftButtonDown)
+    currentCamera->ProcessMouseMovement(-xoffset, -yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-  winState.camera->ProcessMouseScroll(static_cast<float>(yoffset));
+  if (winState->showPanel)
+    return;
+  currentCamera->ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  winState.camera->ResizeWindow(width, height);
+  currentCamera->ResizeWindow(width, height);
   glViewport(0, 0, width, height);
 }
 
-GLFWwindow *InitWindow(Camera *camera, int width, int height) {
-  winState = WinState(camera, width, height);
+GLFWwindow *WinState::InitWindow(Camera *cam, int width, int height) {
+  camera = cam;
+  camera->ResizeWindow(width, height);
   glfwInit();
 
 #ifdef USE_OPEN_GLES
@@ -54,12 +61,10 @@ GLFWwindow *InitWindow(Camera *camera, int width, int height) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-  GLFWwindow *window =
-      glfwCreateWindow(width, height, "LearnOpenGL OpenGL ES 2.0", NULL, NULL);
+  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
   if (!window) {
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-    window = glfwCreateWindow(width, height, "LearnOpenGL OpenGL ES 2.0 Native",
-                              NULL, NULL);
+    window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
     if (!window) {
       glfwTerminate();
       exit(EXIT_FAILURE);
@@ -98,8 +103,7 @@ GLFWwindow *InitWindow(Camera *camera, int width, int height) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif // IMGUI_IMPL_OPENGL_ES2
-  GLFWwindow *window =
-      glfwCreateWindow(width, height, glsl_version, NULL, NULL);
+  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
   if (window == NULL) {
     return window;
   }
@@ -107,8 +111,7 @@ GLFWwindow *InitWindow(Camera *camera, int width, int height) {
 
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  GLFWwindow *window =
-      glfwCreateWindow(width, height, "LearnOpenGL Apple", NULL, NULL);
+  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
   if (window == NULL) {
     return window;
   }
@@ -116,10 +119,12 @@ GLFWwindow *InitWindow(Camera *camera, int width, int height) {
 
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+  // #ifndef USE_IMGUI
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
   glfwSetScrollCallback(window, scroll_callback);
-  // tell GLFW to capture our mouse
-  // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  // #endif
+  winState = this;
+  currentCamera = camera;
   return window;
 }

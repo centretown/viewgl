@@ -28,8 +28,8 @@
 #include <assimp/postprocess.h> // Post processing flags
 #include <assimp/scene.h>       // Output data structure
 
-#define SCREEN_WIDTH 1024
-#define SCREEN_HEIGHT 1024
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
 float windowWidth = (float)SCREEN_WIDTH;
 float windowHeight = (float)SCREEN_HEIGHT;
 
@@ -64,14 +64,18 @@ bool show_another_window = false;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 ImGuiIO *io = NULL;
 
+void LoadFonts();
+
+WinState state;
+
 int main(int argc, const char **argv) {
 
   InputOptions args;
-  args.Parse("tut18", argc, argv);
+  args.Parse("viewgl", argc, argv);
   printf("modelPath=\"%s\" skyboxPath=\"%s\"\n", args.modelPath.c_str(),
          args.skyboxPath.c_str());
 
-  GLFWwindow *window = InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
+  GLFWwindow *window = state.InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
   if (window == NULL) {
     printf("Failed to create GLFW window\n");
     return 1;
@@ -113,6 +117,8 @@ int main(int argc, const char **argv) {
     glfwTerminate();
     return -1;
   }
+
+  LoadFonts();
 
   float skyboxVertices[] = {
       // positions
@@ -171,7 +177,13 @@ int main(int argc, const char **argv) {
   skyboxShader.setInt("skybox", 0);
 
   while (!glfwWindowShouldClose(window)) {
-    camera.ProcessInput(window);
+    if (state.showPanel) {
+      glViewport(state.panelWidth, 0, state.WindowWidth(),
+                 state.WindowHeight());
+    } else {
+      camera.ProcessInput(window);
+      glViewport(0, 0, state.WindowWidth(), state.WindowHeight());
+    }
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -184,6 +196,8 @@ int main(int argc, const char **argv) {
     curShader.setMat4("projection", projection);
     curShader.setMat4("view", view);
     curShader.setVec3("cameraPos", camera.Position);
+    curShader.setInt("refraction", 1);
+    curShader.setFloat("refractionIndex", state.refractionIndex);
 
     // render the loaded model
     glm::mat4 model = glm::mat4(1.0f);
@@ -258,55 +272,87 @@ void DrawGui(GLFWwindow *window) {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  if (show_demo_window)
-    ImGui::ShowDemoWindow(&show_demo_window);
+  float fontSize = ImGui::GetFontSize();
+  // // status bar
+  // {
+  //   ImGui::SetNextWindowPos(ImVec2(0, state.windowHeight - fontSize));
+  //   bool bopen = false;
+  //   auto io = ImGui::GetIO();
+  //   ImGui::Begin("status", &bopen,
+  //                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+  //                    ImGuiWindowFlags_AlwaysAutoResize);
+  //   ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate,
+  //               io.Framerate);
 
-  // 2. Show a simple window that we create ourselves. We use a Begin/End pair
-  // to create a named window.
+  //   ImGui::End();
+  // }
+  // menu button
   {
-    static float f = 0.0f;
-    static int counter = 0;
+    // bool bopen = false;
+    // ImGui::SetNextWindowPos(ImVec2(10, 10));
+    // ImGui::Begin("Hello", &bopen,
+    //              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+    //                  ImGuiWindowFlags_AlwaysAutoResize);
+    if (ImGui::BeginMainMenuBar()) {
+      if (ImGui::BeginMenu("Panel")) {
+        if (ImGui::MenuItem((state.showPanel) ? "Hide" : "Show", "")) {
+          state.showPanel = !state.showPanel;
+        }
+        ImGui::EndMenu();
+      }
+      ImGui::EndMainMenuBar();
+    }
 
-    ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
-                                   // and append into it.
+    // ImGui::End();
+  }
 
-    ImGui::Text("This is some useful text."); // Display some text (you can
-                                              // use a format strings too)
-    ImGui::Checkbox(
-        "Demo Window",
-        &show_demo_window); // Edit bools storing our window open/close state
-    ImGui::Checkbox("Another Window", &show_another_window);
-
-    ImGui::SliderFloat("float", &f, 0.0f,
-                       1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-    ImGui::ColorEdit3(
-        "clear color",
-        (float *)&clear_color); // Edit 3 floats representing a color
-
-    if (ImGui::Button("Button")) // Buttons return true when clicked (most
-                                 // widgets return true when edited/activated)
-      counter++;
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
-
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / io->Framerate, io->Framerate);
+  float panelWidth = fontSize * state.panelWidth + state.panelPadding;
+  if (state.showPanel) {
+    bool bopen = false;
+    ImGui::SetNextWindowPos(ImVec2(0, fontSize + 10));
+    ImGui::SetNextWindowSize(ImVec2(panelWidth - state.panelPadding,
+                                    state.WindowHeight() - fontSize));
+    ImGui::Begin("xxxstyle", &bopen,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+    if (ImGui::CollapsingHeader("Panel Settings")) {
+      ImGui::SeparatorText("View");
+      ImGui::SliderFloat("PanelWidth", &state.panelWidth, PanelWidthMin,
+                         PanelWidthMax, "%.0f");
+      ImGui::SliderFloat("RefractionIndex", &state.refractionIndex,
+                         RefractionIndexMin, RefractionIndexMax, "%.1f");
+    }
+    if (ImGui::CollapsingHeader("Style Editor"))
+      ImGui::ShowStyleEditor();
+    // ImGui::ShowDemoWindow(&bopen);
     ImGui::End();
   }
 
-  // 3. Show another simple window.
-  if (show_another_window) {
-    ImGui::Begin(
-        "Another Window",
-        &show_another_window); // Pass a pointer to our bool variable (the
-                               // window will have a closing button that will
-                               // clear the bool when clicked)
-    ImGui::Text("Hello from another window!");
-    if (ImGui::Button("Close Me"))
-      show_another_window = false;
-    ImGui::End();
-  }
   // Rendering
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void LoadFonts() {
+  ImGuiIO &io = ImGui::GetIO();
+
+  io.Fonts->AddFontDefault();
+
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16.0f);
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18.0f);
+  ImFont *font = io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20.0f);
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22.0f);
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24.0f);
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28.0f);
+  io.Fonts->AddFontFromFileTTF(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 32.0f);
+  if (font)
+    io.FontDefault = font;
 }
