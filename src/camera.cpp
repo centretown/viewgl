@@ -2,144 +2,111 @@
 #include <GLFW/glfw3.h>
 #include <cstdio>
 
-#ifdef USE_IMGUI
-#include "imgui.h"
-#endif // USE_IMGUI
-// returns the view matrix calculated using Euler Angles and the LookAt Matrix
-glm::mat4 Camera::GetViewMatrix(glm::vec3 axis) {
-  return glm::rotate(glm::lookAt(Position, Position + Front, Up),
-                     glm::radians(rotation_angleY), axis);
+void Camera::ProcessDirection(CameraMovement direction, float deltaTime) {
+  float velocity = speed * deltaTime;
+  if (direction == CAMERA_FORWARD)
+    position += front * velocity;
+  if (direction == CAMERA_BACKWARD)
+    position -= front * velocity;
+  if (direction == CAMERA_LEFT)
+    position -= right * velocity;
+  if (direction == CAMERA_RIGHT)
+    position += right * velocity;
 }
 
-glm::mat4 Camera::RotateViewMatrix(glm::mat4 &view, glm::vec3 axis) {
-  view = glm::lookAt(Position, Position + Front, Up);
-  view = glm::rotate(view, glm::radians(rotation_angleY), axis);
-  return view;
-}
+void Camera::ProcessMovement(float xoffset, float yoffset,
+                             GLboolean constrainPitch) {
+  xoffset *= sensitivity;
+  yoffset *= sensitivity;
 
-glm::mat4 Camera::GetProjectionMatrix() {
-  return glm::perspective(glm::radians(Zoom), windowWidth / windowHeight, 0.1f,
-                          100.0f);
-}
+  yaw += xoffset;
+  pitch += yoffset;
 
-// processes input received from any keyboard-like input system. Accepts input
-// parameter in the form of camera defined ENUM (to abstract it from windowing
-// systems)
-void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime) {
-  float velocity = MovementSpeed * deltaTime;
-  if (direction == FORWARD)
-    Position += Front * velocity;
-  if (direction == BACKWARD)
-    Position -= Front * velocity;
-  if (direction == LEFT)
-    Position -= Right * velocity;
-  if (direction == RIGHT)
-    Position += Right * velocity;
-}
-
-// processes input received from a mouse input system. Expects the offset
-// value in both the x and y direction.
-void Camera::ProcessMouseMovement(float xoffset, float yoffset,
-                                  GLboolean constrainPitch) {
-  xoffset *= MouseSensitivity;
-  yoffset *= MouseSensitivity;
-
-  Yaw += xoffset;
-  Pitch += yoffset;
-
-  // make sure that when pitch is out of bounds, screen doesn't get flipped
   if (constrainPitch) {
-    if (Pitch > 89.0f)
-      Pitch = 89.0f;
-    if (Pitch < -89.0f)
-      Pitch = -89.0f;
+    if (pitch > 89.0f)
+      pitch = 89.0f;
+    if (pitch < -89.0f)
+      pitch = -89.0f;
   }
 
-  // update Front, Right and Up Vectors using the updated Euler angles
-  updateCameraVectors();
+  updateVectors();
 }
 
-// processes input received from a mouse scroll-wheel event. Only requires
-// input on the vertical wheel-axis
-void Camera::ProcessMouseScroll(float yoffset) {
-  Zoom -= (float)yoffset;
-  if (Zoom < 1.0f)
-    Zoom = 1.0f;
-  if (Zoom > 90.0f)
-    Zoom = 90.0f;
+void Camera::ProcessScroll(float yoffset) {
+  zoom -= (float)yoffset;
+  if (zoom < 1.0f)
+    zoom = 1.0f;
+  if (zoom > 90.0f)
+    zoom = 90.0f;
 }
 
-void Camera::updateCameraVectors() {
-  // calculate the new Front vector
-  glm::vec3 front;
-  front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-  front.y = sin(glm::radians(Pitch));
-  front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-  Front = glm::normalize(front);
-  // also re-calculate the Right and Up vector
-  Right = glm::normalize(glm::cross(
-      Front, WorldUp)); // normalize the vectors, because their length gets
-                        // closer to 0 the more you look up or down which
-                        // results in slower movement.
-  Up = glm::normalize(glm::cross(Right, Front));
+void Camera::updateVectors() {
+  glm::vec3 f;
+  f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+  f.y = sin(glm::radians(pitch));
+  f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+  front = glm::normalize(f);
+  right = glm::normalize(glm::cross(front, worldUp));
+  up = glm::normalize(glm::cross(right, front));
 }
 
-void Camera::ProcessInput(GLFWwindow *window) {
-  float currentFrame = glfwGetTime();
-  float deltaTime = currentFrame - lastFrame;
-  lastFrame = currentFrame;
+// void Camera::ProcessInput(GLFWwindow *window) {
+//   float currentFrame = glfwGetTime();
+//   float deltaTime = currentFrame - lastFrame;
+//   lastFrame = currentFrame;
 
-  int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
-  if (present) {
-    int axesCount;
-    const float *axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
-    int buttonCount;
-    const unsigned char *buttons =
-        glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS) {
-      ProcessKeyboard(FORWARD, deltaTime * 5);
-    }
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS) {
-      ProcessKeyboard(BACKWARD, deltaTime * 5);
-    }
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS) {
-      rotation_angleY -= 1.0;
-    }
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS) {
-      rotation_angleY += 1.0;
-    }
-    // GLFW_GAMEPAD_BUTTON_DPAD_RIGHT
-    // GLFW_GAMEPAD_BUTTON_DPAD_DOWN
-    // GLFW_GAMEPAD_BUTTON_DPAD_LEFT
-    // int hatCount;
-    // const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1,
-    // &hatCount);
+//   int present = glfwJoystickPresent(GLFW_JOYSTICK_1);
+//   if (present) {
+//     int axesCount;
+//     const float *axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
+//     int buttonCount;
+//     const unsigned char *buttons =
+//         glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
+//     if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS) {
+//       ProcessDirection(CAMERA_FORWARD, deltaTime);
+//     }
+//     if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS) {
+//       ProcessDirection(CAMERA_BACKWARD, deltaTime);
+//     }
+//     if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS) {
+//       rotationAngleY -= 1.0;
+//     }
+//     if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS) {
+//       rotationAngleY += 1.0;
+//     }
+//     // GLFW_GAMEPAD_BUTTON_DPAD_RIGHT
+//     // GLFW_GAMEPAD_BUTTON_DPAD_DOWN
+//     // GLFW_GAMEPAD_BUTTON_DPAD_LEFT
+//     // int hatCount;
+//     // const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1,
+//     // &hatCount);
 
-    // printf("axes=%d buttons=%d hats=%d\n", axesCount, buttonCount, hatCount);
-  }
+//     // printf("axes=%d buttons=%d hats=%d\n", axesCount, buttonCount,
+//     hatCount);
+//   }
 
-  if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
-    ProcessKeyboard(FORWARD, deltaTime * 5);
-  if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
-    ProcessKeyboard(BACKWARD, deltaTime * 5);
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    ProcessKeyboard(FORWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    ProcessKeyboard(BACKWARD, deltaTime);
+//   if (glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_FORWARD, deltaTime * 5);
+//   if (glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_BACKWARD, deltaTime * 5);
+//   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
+//       glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_FORWARD, deltaTime);
+//   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
+//       glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_BACKWARD, deltaTime);
 
-  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-    rotation_angleY -= 1.0;
-  }
-  if (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
-    rotation_angleY += 1.0;
-  }
+//   if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+//     rotationAngleY -= 1.0;
+//   }
+//   if (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+//     rotationAngleY += 1.0;
+//   }
 
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    ProcessKeyboard(LEFT, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    ProcessKeyboard(RIGHT, deltaTime);
-}
+//   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
+//       glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_LEFT, deltaTime);
+//   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
+//       glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+//     ProcessDirection(CAMERA_RIGHT, deltaTime);
+// }

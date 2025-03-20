@@ -1,23 +1,32 @@
 
 #include "win.hpp"
+#include "camera.hpp"
 #include "glad.h"
+#include <GLFW/glfw3.h>
 
-Camera *currentCamera = NULL;
-WinState *winState = NULL;
-
-float lastX = 0.0f;
-float lastY = 0.0f;
-bool firstMouse = true;
-bool leftButtonDown = false;
+static Camera *currentCamera = NULL;
+static WinState *winState = NULL;
+static float lastX = 0.0f;
+static float lastY = 0.0f;
+static bool firstMouse = true;
+static bool leftButtonDown = false;
+static bool rightButtonDown = false;
+static bool panelToggle = false;
+static bool startPressed = false;
+static bool f2Pressed = false;
 
 void mouse_button_callback(GLFWwindow *window, int button, int action,
                            int mods) {
-  leftButtonDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == 1);
+  leftButtonDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS);
+  panelToggle = (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE);
+  // panelToggle = (!rightDown && rightButtonDown);
+  // rightButtonDown = rightDown;
 }
 
 void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
   if (winState->showPanel)
     return;
+
   float xpos = static_cast<float>(xposIn);
   float ypos = static_cast<float>(yposIn);
 
@@ -28,31 +37,30 @@ void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
   }
 
   float xoffset = xpos - lastX;
-  float yoffset =
-      lastY - ypos; // reversed since y-coordinates go from bottom to top
+  float yoffset = lastY - ypos;
 
   lastX = xpos;
   lastY = ypos;
   if (leftButtonDown)
-    currentCamera->ProcessMouseMovement(-xoffset, -yoffset);
+    currentCamera->ProcessMovement(-xoffset, -yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   if (winState->showPanel)
     return;
-  currentCamera->ProcessMouseScroll(static_cast<float>(yoffset));
+  currentCamera->ProcessScroll(static_cast<float>(yoffset));
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  currentCamera->ResizeWindow(width, height);
+  winState->Resize(width, height);
   glViewport(0, 0, width, height);
 }
 
-GLFWwindow *WinState::InitWindow(Camera *cam, int width, int height) {
-  camera = cam;
-  camera->ResizeWindow(width, height);
+GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
+  winState = this;
+  currentCamera = cam;
+
+  Resize(w, h);
   glfwInit();
 
 #ifdef USE_OPEN_GLES
@@ -119,12 +127,88 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int width, int height) {
 
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  // #ifndef USE_IMGUI
+
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
   glfwSetScrollCallback(window, scroll_callback);
-  // #endif
-  winState = this;
-  currentCamera = camera;
+
   return window;
+}
+
+bool WinState::CheckPanel() {
+  if (panelToggle) {
+    showPanel = !showPanel;
+    panelToggle = false;
+  } else {
+    if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+      int buttonCount;
+      const unsigned char *buttons =
+          glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
+
+      if (startPressed && buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_RELEASE) {
+        showPanel = !showPanel;
+        startPressed = false;
+      } else
+        startPressed = (buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS);
+    }
+    if (f2Pressed && glfwGetKey(window, GLFW_KEY_F2) == GLFW_RELEASE) {
+      showPanel = !showPanel;
+      f2Pressed = false;
+    } else
+      f2Pressed = (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS);
+  }
+  return showPanel;
+}
+
+void WinState::ProcessInput(Camera &camera) {
+  float currentFrame = glfwGetTime();
+  float deltaTime = currentFrame - lastFrame;
+  lastFrame = currentFrame;
+
+  CameraMovement direction = (CameraMovement)-1;
+  float rotationAngleY = camera.RotationAngle();
+
+  if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+    int axesCount;
+    const float *axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
+    int buttonCount;
+    const unsigned char *buttons =
+        glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
+
+    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS)
+      direction = CAMERA_FORWARD;
+    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS)
+      direction = CAMERA_BACKWARD;
+    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS)
+      rotationAngleY -= 1.0;
+    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS)
+      rotationAngleY += 1.0;
+
+    // GLFW_GAMEPAD_BUTTON_DPAD_RIGHT
+    // GLFW_GAMEPAD_BUTTON_DPAD_DOWN
+    // GLFW_GAMEPAD_BUTTON_DPAD_LEFT
+    // int hatCount;
+    // const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1,
+    // &hatCount);
+
+    // printf("axes=%d buttons=%d hats=%d\n", axesCount, buttonCount, hatCount);
+  }
+
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
+      glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    direction = CAMERA_FORWARD;
+  // ProcessDirection(CAMERA_FORWARD, deltaTime);
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
+      glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    direction = CAMERA_BACKWARD;
+
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    rotationAngleY -= 1.0;
+
+  if (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+    rotationAngleY += 1.0;
+
+  if (direction >= 0)
+    camera.ProcessDirection(direction, deltaTime);
+  camera.SetRotationAngle(rotationAngleY);
 }

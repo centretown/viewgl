@@ -35,8 +35,6 @@ float windowHeight = (float)SCREEN_HEIGHT;
 
 void DrawContainers(float scale, Shader &shader, unsigned int texture, int VAO);
 void DrawGui(GLFWwindow *window);
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 // #define USE_OPEN_GLES
 #if defined(USE_OPEN_GLES)
@@ -59,14 +57,15 @@ Shader skyboxShader("../assets/shaders/gls330/skybox.vert",
                     "../assets/shaders/gls330/skybox.frag");
 #endif
 
-bool show_demo_window = true;
-bool show_another_window = false;
-ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-ImGuiIO *io = NULL;
+// bool show_demo_window = true;
+// bool show_another_window = false;
+// ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+// ImGuiIO *io = NULL;
 
 void LoadFonts();
 
 WinState state;
+Camera camera;
 
 int main(int argc, const char **argv) {
 
@@ -92,11 +91,10 @@ int main(int argc, const char **argv) {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  io = &ImGui::GetIO();
-
-  io->ConfigFlags |=
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-  io->ConfigFlags |=
+  io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
   // Setup Dear ImGui style
@@ -177,25 +175,22 @@ int main(int argc, const char **argv) {
   skyboxShader.setInt("skybox", 0);
 
   while (!glfwWindowShouldClose(window)) {
-    if (state.showPanel) {
-      glViewport(state.panelWidth, 0, state.WindowWidth(),
-                 state.WindowHeight());
-    } else {
-      camera.ProcessInput(window);
-      glViewport(0, 0, state.WindowWidth(), state.WindowHeight());
+    if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
+      ImGui_ImplGlfw_Sleep(10);
+      continue;
     }
-
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     curShader.use();
     glm::vec3 axis(0.0f, 1.0f, 0.0f);
     glm::mat4 view = camera.GetViewMatrix(axis);
-    glm::mat4 projection = camera.GetProjectionMatrix();
+    glm::mat4 projection =
+        camera.GetProjectionMatrix(state.width, state.height);
 
     curShader.setMat4("projection", projection);
     curShader.setMat4("view", view);
-    curShader.setVec3("cameraPos", camera.Position);
+    curShader.setVec3("cameraPos", camera.position);
     curShader.setInt("refraction", 1);
     curShader.setFloat("refractionIndex", state.refractionIndex);
 
@@ -227,7 +222,13 @@ int main(int argc, const char **argv) {
     glBindVertexArray(0);
     glDepthFunc(GL_LESS); // set depth function back to default
 
-    DrawGui(window);
+    if (state.CheckPanel()) {
+      glViewport(state.panelWidth, 0, state.width, state.height);
+      DrawGui(window);
+    } else {
+      glViewport(0, 0, state.width, state.height);
+      state.ProcessInput(camera);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -243,93 +244,34 @@ int main(int argc, const char **argv) {
   return 0;
 }
 
-void DrawContainers(float scale, Shader &shader, unsigned int texture,
-                    int VAO) {
-  glBindVertexArray(VAO);
-  shader.use();
-  // float scale = 1.1f;
-  // cubes
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glm::mat4 model = glm::mat4(1.0f);
-  model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-  model = glm::scale(model, glm::vec3(scale, scale, scale));
-  shader.setMat4("model", model);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
-  model = glm::mat4(1.0f);
-  model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-  model = glm::scale(model, glm::vec3(scale, scale, scale));
-  shader.setMat4("model", model);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
-}
-
 void DrawGui(GLFWwindow *window) {
-  if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
-    ImGui_ImplGlfw_Sleep(10);
-    return;
-  }
-  // Start the Dear ImGui frame
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
   float fontSize = ImGui::GetFontSize();
-  // // status bar
-  // {
-  //   ImGui::SetNextWindowPos(ImVec2(0, state.windowHeight - fontSize));
-  //   bool bopen = false;
-  //   auto io = ImGui::GetIO();
-  //   ImGui::Begin("status", &bopen,
-  //                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-  //                    ImGuiWindowFlags_AlwaysAutoResize);
-  //   ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate,
-  //               io.Framerate);
-
-  //   ImGui::End();
-  // }
-  // menu button
-  {
-    // bool bopen = false;
-    // ImGui::SetNextWindowPos(ImVec2(10, 10));
-    // ImGui::Begin("Hello", &bopen,
-    //              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-    //                  ImGuiWindowFlags_AlwaysAutoResize);
-    if (ImGui::BeginMainMenuBar()) {
-      if (ImGui::BeginMenu("Panel")) {
-        if (ImGui::MenuItem((state.showPanel) ? "Hide" : "Show", "")) {
-          state.showPanel = !state.showPanel;
-        }
-        ImGui::EndMenu();
-      }
-      ImGui::EndMainMenuBar();
-    }
-
-    // ImGui::End();
-  }
+  ImGui::SetNextWindowPos(ImVec2(0, 0));
 
   float panelWidth = fontSize * state.panelWidth + state.panelPadding;
-  if (state.showPanel) {
-    bool bopen = false;
-    ImGui::SetNextWindowPos(ImVec2(0, fontSize + 10));
-    ImGui::SetNextWindowSize(ImVec2(panelWidth - state.panelPadding,
-                                    state.WindowHeight() - fontSize));
-    ImGui::Begin("xxxstyle", &bopen,
-                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoCollapse |
-                     ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::SetNextWindowSize(
+      ImVec2(panelWidth - state.panelPadding, state.height));
+
+  bool bopen = false;
+  if (ImGui::Begin("xxxPanelxxx", &bopen,
+                   ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                       ImGuiWindowFlags_NoCollapse |
+                       ImGuiWindowFlags_AlwaysAutoResize)) {
     if (ImGui::CollapsingHeader("Panel Settings")) {
-      ImGui::SeparatorText("View");
-      ImGui::SliderFloat("PanelWidth", &state.panelWidth, PanelWidthMin,
+      ImGui::SliderFloat("Panel Width", &state.panelWidth, PanelWidthMin,
                          PanelWidthMax, "%.0f");
-      ImGui::SliderFloat("RefractionIndex", &state.refractionIndex,
+      ImGui::SliderFloat("Refraction Index", &state.refractionIndex,
                          RefractionIndexMin, RefractionIndexMax, "%.1f");
     }
     if (ImGui::CollapsingHeader("Style Editor"))
       ImGui::ShowStyleEditor();
-    // ImGui::ShowDemoWindow(&bopen);
     ImGui::End();
   }
 
-  // Rendering
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

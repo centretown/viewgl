@@ -7,7 +7,7 @@ glm::vec3 pointLightPositions[] = {
 void InitializeLights(Shader &targetShader, Camera &camera) {
 
   targetShader.use();
-  targetShader.setVec3("viewPos", camera.Position);
+  targetShader.setVec3("viewPos", camera.Position());
   // targetShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
   targetShader.setFloat("material.shininess", 64.0f);
 
@@ -44,8 +44,8 @@ void InitializeLights(Shader &targetShader, Camera &camera) {
   targetShader.setFloat("pointLights[3].linear", 0.09f);
   targetShader.setFloat("pointLights[3].quadratic", 0.032f);
   // spotLight
-  targetShader.setVec3("spotLight.position", camera.Position);
-  targetShader.setVec3("spotLight.direction", camera.Front);
+  targetShader.setVec3("spotLight.position", camera.Position());
+  targetShader.setVec3("spotLight.direction", camera.Front());
   targetShader.setVec3("spotLight.ambient", 0.1f, 0.1f, 0.1f);
   targetShader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
   targetShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
@@ -58,7 +58,7 @@ void InitializeLights(Shader &targetShader, Camera &camera) {
 
 void UpdateLights(Shader &targetShader, Camera &camera) {
   targetShader.use();
-  targetShader.setVec3("viewPos", camera.Position);
-  targetShader.setVec3("spotLight.position", camera.Position);
-  targetShader.setVec3("spotLight.direction", camera.Front);
+  targetShader.setVec3("viewPos", camera.Position());
+  targetShader.setVec3("spotLight.position", camera.Position());
+  targetShader.setVec3("spotLight.direction", camera.Front());
 }

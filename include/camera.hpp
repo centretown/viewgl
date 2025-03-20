@@ -1,106 +1,74 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-// #define USE_IMGUI
-
 #include "glad.h"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Defines several possible options for camera movement. Used as abstraction to
-// stay away from window-system specific input methods
-enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
+enum CameraMovement {
+  CAMERA_FORWARD,
+  CAMERA_BACKWARD,
+  CAMERA_LEFT,
+  CAMERA_RIGHT
+};
 
-// Default camera values
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
-const float SPEED = 2.5f;
-const float SENSITIVITY = 0.1f;
-const float ZOOM = 45.0f;
-#define DEFAULT_SCREEN_WIDTH 720
-#define DEFAULT_SCREEN_HEIGHT 720
+const float CAMERA_YAW = -90.0f;
+const float CAMERA_PITCH = 0.0f;
+const float CAMERA_SPEED = 2.5f;
+const float CAMERA_SENSITIVITY = 0.1f;
+const float CAMERA_ZOOM = 45.0f;
 
-// An abstract camera class that processes input and calculates the
-// corresponding Euler Angles, Vectors and Matrices for use in OpenGL
 class Camera {
-public:
-  // camera Attributes
-  glm::vec3 Position;
-  glm::vec3 Front;
-  glm::vec3 Up;
-  glm::vec3 Right;
-  glm::vec3 WorldUp;
   // euler Angles
-  float Yaw;
-  float Pitch;
+  float yaw = CAMERA_YAW;
+  float pitch = CAMERA_PITCH;
   // camera options
-  float MovementSpeed;
-  float MouseSensitivity;
-  float Zoom;
+  float speed = CAMERA_SPEED;
+  float sensitivity = CAMERA_SENSITIVITY;
+  float zoom = CAMERA_ZOOM;
   float lastFrame = 0.0f; // Time of last frame
 
-  float rotation_angleY = 0.0f;
-  float rotation_angleX = 0.0f;
-  float rotation_angleZ = 0.0f;
+  float rotationAngleY = 0.0f;
+  float rotationAngleX = 0.0f;
+  float rotationAngleZ = 0.0f;
 
-  float windowWidth = (float)DEFAULT_SCREEN_WIDTH;
-  float windowHeight = (float)DEFAULT_SCREEN_HEIGHT;
+public:
+  glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f);
+  glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
+  glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 right = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-  Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
-         float pitch = PITCH)
-      : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
-    Position = position;
-    WorldUp = up;
-    Yaw = yaw;
-    Pitch = pitch;
-    updateCameraVectors();
+  Camera() { updateVectors(); }
+
+  glm::mat4 GetViewMatrix(glm::vec3 axis) {
+    return glm::rotate(glm::lookAt(position, position + front, up),
+                       glm::radians(rotationAngleY), axis);
   }
 
-  // constructor with scalar values
-  Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
-         float yaw, float pitch)
-      : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
-    Position = glm::vec3(posX, posY, posZ);
-    WorldUp = glm::vec3(upX, upY, upZ);
-    Yaw = yaw;
-    Pitch = pitch;
-    updateCameraVectors();
+  glm::mat4 RotateViewMatrix(glm::mat4 &view, glm::vec3 axis) {
+    view = glm::lookAt(position, position + front, up);
+    view = glm::rotate(view, glm::radians(rotationAngleY), axis);
+    return view;
   }
 
-  // returns the view matrix calculated using Euler Angles and the LookAt Matrix
-  glm::mat4 GetViewMatrix(glm::vec3 axis);
-  glm::mat4 RotateViewMatrix(glm::mat4 &view, glm::vec3 axis);
-  glm::mat4 GetProjectionMatrix();
-  // processes input received from any keyboard-like input system. Accepts input
-  // parameter in the form of camera defined ENUM (to abstract it from windowing
-  // systems)
-  void ProcessKeyboard(Camera_Movement direction, float deltaTime);
-
-  // processes input received from a mouse input system. Expects the offset
-  // value in both the x and y direction.
-  void ProcessMouseMovement(float xoffset, float yoffset,
-                            GLboolean constrainPitch = true);
-
-  // processes input received from a mouse scroll-wheel event. Only requires
-  // input on the vertical wheel-axis
-  void ProcessMouseScroll(float yoffset);
-
-  void ProcessInput(GLFWwindow *window);
-  void ProcessInputImGui(GLFWwindow *window);
-
-  float rotationAngle() { return rotation_angleY; }
-
-  void ResizeWindow(int width, int height) {
-    windowWidth = (float)width;
-    windowHeight = (float)height;
+  glm::mat4 GetProjectionMatrix(float width, float height) {
+    return glm::perspective(glm::radians(zoom), width / height, 0.1f, 100.0f);
   }
+
+  void ProcessDirection(CameraMovement direction, float deltaTime);
+  void ProcessMovement(float xoffset, float yoffset,
+                       GLboolean constrainPitch = true);
+  void ProcessScroll(float yoffset);
+  // void ProcessInput(GLFWwindow *window);
+
+  float RotationAngle() { return rotationAngleY; }
+  void SetRotationAngle(float angleY) { rotationAngleY = angleY; }
+  glm::vec3 &Position() { return position; };
+  glm::vec3 &Front() { return front; };
 
 private:
-  // calculates the front vector from the Camera's (updated) Euler Angles
-  void updateCameraVectors();
+  void updateVectors();
 };
 #endif
