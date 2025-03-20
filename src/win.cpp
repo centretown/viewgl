@@ -4,23 +4,36 @@
 #include "glad.h"
 #include <GLFW/glfw3.h>
 
+#include <cstdio>
+
 static Camera *currentCamera = NULL;
 static WinState *winState = NULL;
 static float lastX = 0.0f;
 static float lastY = 0.0f;
 static bool firstMouse = true;
-static bool leftButtonDown = false;
-static bool rightButtonDown = false;
-static bool panelToggle = false;
-static bool startPressed = false;
-static bool f2Pressed = false;
+static bool leftMouseDown = false;
+static bool mouseMenuClicked = false;
+static int menuButton = GLFW_GAMEPAD_BUTTON_START;
+static bool menuButtonPressed = false;
+static bool menuKeyPressed = false;
+static int menuKey = GLFW_KEY_F2;
+
+// static float axisValues[4] = {0};
+// Set axis deadzones
+const float leftDeadzoneX = 0.1f;
+const float leftDeadzoneY = 0.1f;
+const float rightDeadzoneX = 0.1f;
+const float rightDeadzoneY = 0.1f;
+const float leftTriggerDeadzone = -0.9f;
+const float rightTriggerDeadzone = -0.9f;
+
+bool gamePadAsMouse = false;
 
 void mouse_button_callback(GLFWwindow *window, int button, int action,
                            int mods) {
-  leftButtonDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS);
-  panelToggle = (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE);
-  // panelToggle = (!rightDown && rightButtonDown);
-  // rightButtonDown = rightDown;
+  leftMouseDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS);
+  mouseMenuClicked =
+      (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE);
 }
 
 void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
@@ -41,7 +54,7 @@ void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
 
   lastX = xpos;
   lastY = ypos;
-  if (leftButtonDown)
+  if (leftMouseDown)
     currentCamera->ProcessMovement(-xoffset, -yoffset);
 }
 
@@ -136,26 +149,25 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
 }
 
 bool WinState::CheckPanel() {
-  if (panelToggle) {
+  if (mouseMenuClicked) {
     showPanel = !showPanel;
-    panelToggle = false;
+    mouseMenuClicked = false;
   } else {
-    if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
-      int buttonCount;
-      const unsigned char *buttons =
-          glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
-
-      if (startPressed && buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_RELEASE) {
+    if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+      GLFWgamepadstate gamepadState = {0};
+      glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState);
+      if (menuButtonPressed &&
+          gamepadState.buttons[menuButton] == GLFW_RELEASE) {
         showPanel = !showPanel;
-        startPressed = false;
+        menuButtonPressed = false;
       } else
-        startPressed = (buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS);
+        menuButtonPressed = (gamepadState.buttons[menuButton] == GLFW_PRESS);
     }
-    if (f2Pressed && glfwGetKey(window, GLFW_KEY_F2) == GLFW_RELEASE) {
+    if (menuKeyPressed && glfwGetKey(window, menuKey) == GLFW_RELEASE) {
       showPanel = !showPanel;
-      f2Pressed = false;
+      menuKeyPressed = false;
     } else
-      f2Pressed = (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS);
+      menuKeyPressed = (glfwGetKey(window, menuKey) == GLFW_PRESS);
   }
   return showPanel;
 }
@@ -168,30 +180,40 @@ void WinState::ProcessInput(Camera &camera) {
   CameraMovement direction = (CameraMovement)-1;
   float rotationAngleY = camera.RotationAngle();
 
-  if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
-    int axesCount;
-    const float *axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
-    int buttonCount;
-    const unsigned char *buttons =
-        glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
-
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS)
-      direction = CAMERA_FORWARD;
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS)
+  if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+    GLFWgamepadstate gamepadState = {0};
+    glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState);
+    if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS)
       direction = CAMERA_BACKWARD;
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS)
+    if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS)
+      direction = CAMERA_FORWARD;
+    if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS)
       rotationAngleY -= 1.0;
-    if (buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS)
+    if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS)
       rotationAngleY += 1.0;
 
-    // GLFW_GAMEPAD_BUTTON_DPAD_RIGHT
-    // GLFW_GAMEPAD_BUTTON_DPAD_DOWN
-    // GLFW_GAMEPAD_BUTTON_DPAD_LEFT
-    // int hatCount;
-    // const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1,
-    // &hatCount);
+    float value = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+    if (value < -leftDeadzoneX || value > leftDeadzoneX)
+      rotationAngleY += value;
+    value = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+    if (value < -leftDeadzoneX || value > leftDeadzoneX)
+      direction = (value > 0) ? CAMERA_FORWARD : CAMERA_BACKWARD;
 
-    // printf("axes=%d buttons=%d hats=%d\n", axesCount, buttonCount, hatCount);
+    float moveX = 0.0f;
+    float moveY = 0.0f;
+    value = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+    if (value < -rightDeadzoneX || value > rightDeadzoneX)
+      moveX = value;
+
+    value = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+    if (value < -rightDeadzoneY || value > rightDeadzoneY)
+      moveY = value;
+
+    if (moveY != 0.0f || moveX != 0.0f) {
+      // printf("%f,%f\n", moveX, moveY);
+      camera.ProcessMovement(-moveX / camera.Sensitivity(),
+                             moveY / camera.Sensitivity());
+    }
   }
 
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||

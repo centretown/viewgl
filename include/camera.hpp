@@ -64,6 +64,7 @@ public:
   // void ProcessInput(GLFWwindow *window);
 
   float RotationAngle() { return rotationAngleY; }
+  float Sensitivity() { return sensitivity; }
   void SetRotationAngle(float angleY) { rotationAngleY = angleY; }
   glm::vec3 &Position() { return position; };
   glm::vec3 &Front() { return front; };
