@@ -11,6 +11,7 @@ const std::string skyboxDir = "skybox";
 const std::string stlDir = "stl";
 const std::string subDir = "";
 
+namespace davegl {
 struct Options {
   std::string resourceDir = "../resources";
   std::string modelType = "stl";
@@ -35,3 +36,4 @@ struct Options {
 
 void FillVector(std::filesystem::path &dir,
                 std::vector<std::filesystem::path> &list, bool log = true);
+} // namespace davegl

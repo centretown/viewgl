@@ -18,7 +18,7 @@ void ShowFiles(std::vector<typename std::filesystem::path> list,
   }
 }
 
-void DrawGui(WinState &state, Options &options) {
+void DrawGui(davegl::WinState &state, davegl::Options &options) {
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
@@ -62,10 +62,11 @@ void DrawGui(WinState &state, Options &options) {
     }
 
     if (ImGui::CollapsingHeader("Panel Settings")) {
-      ImGui::SliderFloat("Panel Width", &state.panelWidth, PanelWidthMin,
-                         PanelWidthMax, "%.0f");
+      ImGui::SliderFloat("Panel Width", &state.panelWidth,
+                         davegl::PanelWidthMin, davegl::PanelWidthMax, "%.0f");
       ImGui::SliderFloat("Refraction Index", &state.refractionIndex,
-                         RefractionIndexMin, RefractionIndexMax, "%.1f");
+                         davegl::RefractionIndexMin, davegl::RefractionIndexMax,
+                         "%.1f");
     }
 
     // always end here.

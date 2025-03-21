@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <cstdio>
 
+namespace davegl {
 void Camera::ProcessDirection(CameraMovement direction, float deltaTime) {
   float velocity = speed * deltaTime;
   if (direction == CAMERA_FORWARD)
@@ -110,3 +111,4 @@ void Camera::updateVectors() {
 //       glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 //     ProcessDirection(CAMERA_RIGHT, deltaTime);
 // }
+} // namespace davegl

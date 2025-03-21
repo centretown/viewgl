@@ -5,6 +5,8 @@
 
 #include <assimp/scene.h> // Output data structure
 
+namespace davegl {
+
 class Model {
   string path;
   bool gammaCorrection;
@@ -28,3 +30,4 @@ public:
       : path{path}, gammaCorrection(gamma) {}
   void Draw(Shader &shader);
 };
+} // namespace davegl

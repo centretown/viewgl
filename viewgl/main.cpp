@@ -34,7 +34,8 @@
 float windowWidth = (float)SCREEN_WIDTH;
 float windowHeight = (float)SCREEN_HEIGHT;
 
-void DrawContainers(float scale, Shader &shader, unsigned int texture, int VAO);
+void DrawContainers(float scale, davegl::Shader &shader, unsigned int texture,
+                    int VAO);
 
 // #define USE_OPEN_GLES
 #if defined(USE_OPEN_GLES)
@@ -45,8 +46,8 @@ void DrawContainers(float scale, Shader &shader, unsigned int texture, int VAO);
 #define GLSL_VERSION 100
 #endif // USE_OPEN_GLES
 
-Shader curShader;
-Shader skyboxShader;
+davegl::Shader curShader;
+davegl::Shader skyboxShader;
 
 const char *curVert = "depth.vert";
 const char *curFrag = "depth.frag";
@@ -82,12 +83,12 @@ float skyboxVertices[] = {
 
 void LoadFonts();
 
-WinState state;
-Camera camera;
+davegl::WinState state;
+davegl::Camera camera;
 
 int main(int argc, const char **argv) {
 
-  Options args;
+  davegl::Options args;
   args.Parse("viewgl", argc, argv);
   printf("resourcePath=\"%s\"\n modelPath=\"%s\"\n skyboxPath=\"%s\"\n",
          args.resourceDir.c_str(), args.modelPath.c_str(),
@@ -165,9 +166,9 @@ int main(int argc, const char **argv) {
 
   printf("modelPath=\"%s\" skyboxPath=\"%s\"\n", args.modelPath.c_str(),
          args.skyboxPath.c_str());
-  unsigned int cubemapTexture = LoadCubemap(args.skyboxPath);
+  unsigned int cubemapTexture = davegl::LoadCubemap(args.skyboxPath);
 
-  Model curModel(args.modelPath);
+  davegl::Model curModel(args.modelPath);
   curModel.Load();
 
   float scale = 1.0;

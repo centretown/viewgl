@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace davegl {
+
 int Shader::LoadFile(const char *path, long &size,
                      std::unique_ptr<char[]> &uptr) {
   FILE *file = fopen(path, "r");
@@ -57,8 +59,7 @@ int Shader::Build() {
   glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(vertex, sizeof(infoLog), NULL, infoLog);
-    printf("'%s' Vertex Shader compilation failed\n%s\n", vertexPath,
-           infoLog);
+    printf("'%s' Vertex Shader compilation failed\n%s\n", vertexPath, infoLog);
     status = SHADER_ERR_COMPILE_VERTEX;
     return SHADER_BUILD_FAIL;
   };
@@ -85,8 +86,8 @@ int Shader::Build() {
   glGetProgramiv(ProgramID, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(ProgramID, sizeof(infoLog), NULL, infoLog);
-    printf("'%s' '%s' Shader linkage failed\n%s\n", vertexPath,
-           fragmentPath, infoLog);
+    printf("'%s' '%s' Shader linkage failed\n%s\n", vertexPath, fragmentPath,
+           infoLog);
     status = SHADER_ERR_LINK_PROGRAM;
     return SHADER_BUILD_FAIL;
   }
@@ -98,3 +99,4 @@ int Shader::Build() {
   status = SHADER_VALID;
   return SHADER_BUILD_OK;
 }
+} // namespace davegl

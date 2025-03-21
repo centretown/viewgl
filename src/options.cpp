@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <string>
 
+namespace davegl {
+
 int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 
   std::unique_ptr<cxxopts::Options> allocated(
@@ -109,3 +111,4 @@ void FillVector(std::filesystem::path &dir,
     list.push_back(dir_entry);
   }
 }
+} // namespace davegl

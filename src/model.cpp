@@ -5,6 +5,8 @@
 #include <assimp/postprocess.h> // Post processing flags
 #include <glm/detail/qualifier.hpp>
 
+namespace davegl {
+
 void Model::Draw(Shader &shader) {
   for (unsigned int i = 0; i < meshes.size(); i++)
     meshes[i].Draw(shader);
@@ -161,3 +163,4 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
   }
   return textures;
 }
+} // namespace davegl

@@ -5,6 +5,8 @@
 #include <memory>
 #include <stddef.h>
 
+namespace davegl {
+
 enum ShaderErrorCode {
   SHADER_VALID,
   SHADER_INVALID,
@@ -91,3 +93,4 @@ private:
   int Load();
   int LoadFile(const char *path, long &size, std::unique_ptr<char[]> &uptr);
 };
+} // namespace davegl
