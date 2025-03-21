@@ -16,7 +16,7 @@ struct WinState {
 
   // Camera *camera;
   bool showPanel = false;
-  float panelWidth = 36.0f;   // font units
+  float panelWidth = 26.0f;   // font units
   float panelPadding = 10.0f; // pixel units
   int refraction = 0;
   float refractionIndex = 4.0f;
@@ -29,7 +29,7 @@ struct WinState {
     width = static_cast<float>(w);
     height = static_cast<float>(h);
   }
-  bool CheckPanel();
+  bool PanelActive();
   void ProcessInput(Camera &camera);
 
 private:

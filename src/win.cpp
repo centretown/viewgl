@@ -8,6 +8,7 @@
 
 static Camera *currentCamera = NULL;
 static WinState *winState = NULL;
+
 static float lastX = 0.0f;
 static float lastY = 0.0f;
 static bool firstMouse = true;
@@ -18,7 +19,6 @@ static bool menuButtonPressed = false;
 static bool menuKeyPressed = false;
 static int menuKey = GLFW_KEY_F2;
 
-// static float axisValues[4] = {0};
 // Set axis deadzones
 const float leftDeadzoneX = 0.1f;
 const float leftDeadzoneY = 0.1f;
@@ -27,7 +27,7 @@ const float rightDeadzoneY = 0.1f;
 const float leftTriggerDeadzone = -0.9f;
 const float rightTriggerDeadzone = -0.9f;
 
-bool gamePadAsMouse = false;
+int activeGamepPad = GLFW_JOYSTICK_1;
 
 void mouse_button_callback(GLFWwindow *window, int button, int action,
                            int mods) {
@@ -148,14 +148,14 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   return window;
 }
 
-bool WinState::CheckPanel() {
+bool WinState::PanelActive() {
   if (mouseMenuClicked) {
     showPanel = !showPanel;
     mouseMenuClicked = false;
   } else {
-    if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+    if (glfwJoystickIsGamepad(activeGamepPad)) {
       GLFWgamepadstate gamepadState = {0};
-      glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState);
+      glfwGetGamepadState(activeGamepPad, &gamepadState);
       if (menuButtonPressed &&
           gamepadState.buttons[menuButton] == GLFW_RELEASE) {
         showPanel = !showPanel;
@@ -173,6 +173,7 @@ bool WinState::CheckPanel() {
 }
 
 void WinState::ProcessInput(Camera &camera) {
+
   float currentFrame = glfwGetTime();
   float deltaTime = currentFrame - lastFrame;
   lastFrame = currentFrame;
@@ -180,9 +181,9 @@ void WinState::ProcessInput(Camera &camera) {
   CameraMovement direction = (CameraMovement)-1;
   float rotationAngleY = camera.RotationAngle();
 
-  if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+  if (glfwJoystickIsGamepad(activeGamepPad)) {
     GLFWgamepadstate gamepadState = {0};
-    glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState);
+    glfwGetGamepadState(activeGamepPad, &gamepadState);
     if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS)
       direction = CAMERA_BACKWARD;
     if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS)
@@ -216,18 +217,16 @@ void WinState::ProcessInput(Camera &camera) {
     }
   }
 
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    direction = CAMERA_FORWARD;
-  // ProcessDirection(CAMERA_FORWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ||
-      glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     direction = CAMERA_BACKWARD;
 
-  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    direction = CAMERA_FORWARD;
+
+  if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     rotationAngleY -= 1.0;
 
-  if (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     rotationAngleY += 1.0;
 
   if (direction >= 0)

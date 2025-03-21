@@ -27,14 +27,20 @@ struct Shader {
   ShaderErrorCode status = SHADER_INVALID;
 
   // constructor reads and builds the shader
+  Shader() {}
   Shader(const char *vertexPath, const char *fragmentPath)
       : vertexPath{vertexPath}, fragmentPath{fragmentPath} {}
 
+  void SetPaths(const char *vertex, const char *fragment) {
+    vertexPath = vertex;
+    fragmentPath = fragment;
+  }
+
   bool IsValid() { return status == SHADER_VALID; }
   int Build();
-  // use/activate the shader
+
   void use() { glUseProgram(ProgramID); }
-  // utility uniform functions
+
   void setBool(const char *name, bool value) const {
     glUniform1i(glGetUniformLocation(ProgramID, name), (int)value);
   }
@@ -44,38 +50,38 @@ struct Shader {
   void setFloat(const char *name, float value) const {
     glUniform1f(glGetUniformLocation(ProgramID, name), value);
   }
-  // ------------------------------------------------------------------------
+
   void setVec2(const char *name, const glm::vec2 &value) const {
     glUniform2fv(glGetUniformLocation(ProgramID, name), 1, &value[0]);
   }
   void setVec2(const char *name, float x, float y) const {
     glUniform2f(glGetUniformLocation(ProgramID, name), x, y);
   }
-  // ------------------------------------------------------------------------
+
   void setVec3(const char *name, const glm::vec3 &value) const {
     glUniform3fv(glGetUniformLocation(ProgramID, name), 1, &value[0]);
   }
   void setVec3(const char *name, float x, float y, float z) const {
     glUniform3f(glGetUniformLocation(ProgramID, name), x, y, z);
   }
-  // ------------------------------------------------------------------------
+
   void setVec4(const char *name, const glm::vec4 &value) const {
     glUniform4fv(glGetUniformLocation(ProgramID, name), 1, &value[0]);
   }
   void setVec4(const char *name, float x, float y, float z, float w) const {
     glUniform4f(glGetUniformLocation(ProgramID, name), x, y, z, w);
   }
-  // ------------------------------------------------------------------------
+
   void setMat2(const char *name, const glm::mat2 &mat) const {
     glUniformMatrix2fv(glGetUniformLocation(ProgramID, name), 1, GL_FALSE,
                        &mat[0][0]);
   }
-  // ------------------------------------------------------------------------
+
   void setMat3(const char *name, const glm::mat3 &mat) const {
     glUniformMatrix3fv(glGetUniformLocation(ProgramID, name), 1, GL_FALSE,
                        &mat[0][0]);
   }
-  // ------------------------------------------------------------------------
+
   void setMat4(const char *name, const glm::mat4 &mat) const {
     glUniformMatrix4fv(glGetUniformLocation(ProgramID, name), 1, GL_FALSE,
                        &mat[0][0]);
