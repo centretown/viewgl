@@ -3,7 +3,7 @@
 #include "camera.hpp"
 #include <GLFW/glfw3.h>
 
-namespace davegl {
+namespace viewgl {
 
 const float PanelWidthMin = 25.0;
 const float PanelWidthMax = 50.0;
@@ -36,4 +36,4 @@ struct WinState {
 
 private:
 };
-} // namespace davegl
+} // namespace viewgl

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace davegl {
+namespace viewgl {
 
 int Shader::LoadFile(const char *path, long &size,
                      std::unique_ptr<char[]> &uptr) {
@@ -99,4 +99,4 @@ int Shader::Build() {
   status = SHADER_VALID;
   return SHADER_BUILD_OK;
 }
-} // namespace davegl
+} // namespace viewgl

@@ -1,7 +1,7 @@
 #include "mesh.hpp"
 #include <glm/ext/vector_float3.hpp>
 
-namespace davegl {
+namespace viewgl {
 
 Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices,
            vector<Texture> textures)
@@ -63,4 +63,4 @@ void Mesh::Draw(Shader &shader) {
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 }
-} // namespace davegl
+} // namespace viewgl

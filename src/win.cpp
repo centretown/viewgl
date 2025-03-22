@@ -6,7 +6,7 @@
 
 #include <cstdio>
 
-namespace davegl {
+namespace viewgl {
 
 static Camera *currentCamera = NULL;
 static WinState *winState = NULL;
@@ -235,4 +235,4 @@ void WinState::ProcessInput(Camera &camera) {
     camera.ProcessDirection(direction, deltaTime);
   camera.SetRotationAngle(rotationAngleY);
 }
-} // namespace davegl
+} // namespace viewgl

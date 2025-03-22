@@ -10,7 +10,7 @@ using std::vector;
 
 #define MAX_BONE_INFLUENCE 4
 
-namespace davegl {
+namespace viewgl {
 
 struct Vertex {
   glm::vec3 Position;
@@ -48,4 +48,4 @@ private:
 
   void setupMesh();
 };
-} // namespace davegl
+} // namespace viewgl

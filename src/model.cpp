@@ -5,7 +5,7 @@
 #include <assimp/postprocess.h> // Post processing flags
 #include <glm/detail/qualifier.hpp>
 
-namespace davegl {
+namespace viewgl {
 
 void Model::Draw(Shader &shader) {
   for (unsigned int i = 0; i < meshes.size(); i++)
@@ -61,6 +61,16 @@ void Model::processNode(aiNode *node, const aiScene *scene) {
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
     processNode(node->mChildren[i], scene);
   }
+}
+
+float Model::Scale() {
+  float scale = 1.0;
+  float diffx = max.x - min.x;
+  float diffy = max.y - min.y;
+  float diff = fmax(diffx, diffy);
+  if (diff != 0.0f)
+    scale = 1.0 / diff;
+  return scale;
 }
 
 void Model::MinMax(glm::vec3 vector) {
@@ -163,4 +173,4 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
   }
   return textures;
 }
-} // namespace davegl
+} // namespace viewgl

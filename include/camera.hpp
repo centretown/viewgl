@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace davegl {
+namespace viewgl {
 
 enum CameraMovement {
   CAMERA_FORWARD,
@@ -75,6 +75,6 @@ private:
   void updateVectors();
 };
 
-} // namespace davegl
+} // namespace viewgl
 
 #endif

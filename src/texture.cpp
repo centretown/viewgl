@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace davegl {
+namespace viewgl {
 
 static GLenum GLformat(int nrChannels) {
   return (nrChannels == 3) ? GL_RGB : (nrChannels == 4) ? GL_RGBA : GL_RED;
@@ -94,4 +94,4 @@ unsigned int LoadCubemap(std::string cubeDirectory) {
 
   return textureID;
 }
-} // namespace davegl
+} // namespace viewgl

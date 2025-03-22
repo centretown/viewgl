@@ -34,7 +34,7 @@
 float windowWidth = (float)SCREEN_WIDTH;
 float windowHeight = (float)SCREEN_HEIGHT;
 
-void DrawContainers(float scale, davegl::Shader &shader, unsigned int texture,
+void DrawContainers(float scale, viewgl::Shader &shader, unsigned int texture,
                     int VAO);
 
 // #define USE_OPEN_GLES
@@ -46,8 +46,8 @@ void DrawContainers(float scale, davegl::Shader &shader, unsigned int texture,
 #define GLSL_VERSION 100
 #endif // USE_OPEN_GLES
 
-davegl::Shader curShader;
-davegl::Shader skyboxShader;
+viewgl::Shader shader;
+viewgl::Shader skyboxShader;
 
 const char *curVert = "depth.vert";
 const char *curFrag = "depth.frag";
@@ -81,18 +81,16 @@ float skyboxVertices[] = {
     -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
     1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
 
-void LoadFonts();
-
-davegl::WinState state;
-davegl::Camera camera;
+viewgl::WinState state;
+viewgl::Camera camera;
 
 int main(int argc, const char **argv) {
 
-  davegl::Options args;
-  args.Parse("viewgl", argc, argv);
+  viewgl::Options options;
+  options.Parse("viewgl", argc, argv);
   printf("resourcePath=\"%s\"\n modelPath=\"%s\"\n skyboxPath=\"%s\"\n",
-         args.resourceDir.c_str(), args.modelPath.c_str(),
-         args.skyboxPath.c_str());
+         options.resourceDir.c_str(), options.modelPath.c_str(),
+         options.skyboxPath.c_str());
 
   GLFWwindow *window = state.InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
   if (window == NULL) {
@@ -107,37 +105,33 @@ int main(int argc, const char **argv) {
   }
 
   glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
-  // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard
-                                                        // Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad
-                                                        // Controls
+  io.ConfigFlags |=
+      ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
 
-  // Setup Dear ImGui style
   ImGui::StyleColorsDark();
-  // ImGui::StyleColorsLight();
-
-  // Setup Platform/Renderer backends
   ImGui_ImplGlfw_InitForOpenGL(window, true);
+
 #ifdef __EMSCRIPTEN__
   ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
 #endif
+
   const char *glsl_version = "#version 330 core";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  std::filesystem::path shaderPath = args.shaderPath;
+  std::filesystem::path shaderPath = options.shaderPath;
   shaderPath.append(glsDir);
 
   std::filesystem::path vertPath = shaderPath;
   vertPath.append("depth.vert");
   std::filesystem::path fragPath = shaderPath;
   fragPath.append("depth.frag");
-  curShader.SetPaths(vertPath.c_str(), fragPath.c_str());
-  curShader.Build();
+  shader.SetPaths(vertPath.c_str(), fragPath.c_str());
+  shader.Build();
 
   vertPath = shaderPath;
   vertPath.append("skybox.vert");
@@ -146,7 +140,7 @@ int main(int argc, const char **argv) {
   skyboxShader.SetPaths(vertPath.c_str(), fragPath.c_str());
   skyboxShader.Build();
 
-  if (!curShader.IsValid() || !skyboxShader.IsValid()) {
+  if (!shader.IsValid() || !skyboxShader.IsValid()) {
     glfwTerminate();
     return -1;
   }
@@ -164,27 +158,11 @@ int main(int argc, const char **argv) {
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 
-  printf("modelPath=\"%s\" skyboxPath=\"%s\"\n", args.modelPath.c_str(),
-         args.skyboxPath.c_str());
-  unsigned int cubemapTexture = davegl::LoadCubemap(args.skyboxPath);
+  printf("modelPath=\"%s\" skyboxPath=\"%s\"\n", options.modelPath.c_str(),
+         options.skyboxPath.c_str());
 
-  davegl::Model curModel(args.modelPath);
-  curModel.Load();
-
-  float scale = 1.0;
-  {
-    float diffx = curModel.max.x - curModel.min.x;
-    float diffy = curModel.max.y - curModel.min.y;
-    float diff = fmax(diffx, diffy);
-    if (diff != 0.0f)
-      scale = 1.0 / diff;
-  }
-
-  // shader configuration
-  // --------------------
-  //
-  curShader.use();
-  curShader.setInt("texture1", 0);
+  options.skyboxTexture = viewgl::LoadCubemap(options.skyboxPath);
+  options.LoadModel();
 
   skyboxShader.use();
   skyboxShader.setInt("skybox", 0);
@@ -197,51 +175,40 @@ int main(int argc, const char **argv) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    curShader.use();
+    shader.use();
     glm::vec3 axis(0.0f, 1.0f, 0.0f);
     glm::mat4 view = camera.GetViewMatrix(axis);
     glm::mat4 projection =
         camera.GetProjectionMatrix(state.width, state.height);
 
-    curShader.setMat4("projection", projection);
-    curShader.setMat4("view", view);
-    curShader.setVec3("cameraPos", camera.position);
-    curShader.setInt("refraction", 1);
-    curShader.setFloat("refractionIndex", state.refractionIndex);
+    shader.setMat4("projection", projection);
+    shader.setMat4("view", view);
+    shader.setVec3("cameraPos", camera.position);
+    shader.setInt("refraction", 1);
+    shader.setFloat("refractionIndex", state.refractionIndex);
 
-    // render the loaded model
     glm::mat4 model = glm::mat4(1.0f);
-    // translate it down so it's at the center of the scene
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    // it's a bit too big for our scene, so scale it down
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
-    // rotate about y-axis
-    // model = glm::rotate(model, glm::radians(rotation_angle),
-    // axis);
-    curShader.setMat4("model", model);
+    model = glm::scale(model, options.Scale());
+    shader.setMat4("model", model);
+    options.model.Draw(shader);
 
-    curModel.Draw(curShader);
-
-    // draw skybox as last
-    glDepthFunc(GL_LEQUAL); // change depth function so depth
-                            // test passes when values are
-                            // equal to depth buffer's content
+    glDepthFunc(GL_LEQUAL);
     skyboxShader.use();
-    // remove translation from the view matrix
     view = glm::mat4(glm::mat3(camera.GetViewMatrix(axis)));
     skyboxShader.setMat4("view", view);
     skyboxShader.setMat4("projection", projection);
-    // skybox cube
+
     glBindVertexArray(skyboxVAO);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, options.skyboxTexture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
     glDepthFunc(GL_LESS); // set depth function back to default
 
     if (state.PanelActive()) {
       glViewport(state.panelWidth, 0, state.width, state.height);
-      DrawGui(state, args);
+      DrawGui(state, options);
     } else {
       glViewport(0, 0, state.width, state.height);
       state.ProcessInput(camera);

@@ -5,7 +5,7 @@
 
 #include <assimp/scene.h> // Output data structure
 
-namespace davegl {
+namespace viewgl {
 
 class Model {
   string path;
@@ -18,16 +18,24 @@ public:
   glm::vec3 max = {0, 0, 0};
   string directory;
 
-  void Load();
   void processNode(aiNode *node, const aiScene *scene);
   Mesh processMesh(aiMesh *mesh, const aiScene *scene);
   vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
                                        string typeName);
+
+  void Load();
+  void Draw(Shader &shader);
+  float Scale();
   void MinMax(glm::vec3 vector);
 
 public:
+  Model() {}
   Model(string const &path, bool gamma = false)
       : path{path}, gammaCorrection(gamma) {}
-  void Draw(Shader &shader);
+
+  void SetPath(string const &p, bool gamma = false) {
+    path = p;
+    gammaCorrection = gamma;
+  }
 };
-} // namespace davegl
+} // namespace viewgl

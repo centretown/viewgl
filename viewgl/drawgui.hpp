@@ -2,5 +2,5 @@
 #include "options.hpp"
 #include "win.hpp"
 
-void DrawGui(davegl::WinState &state, davegl::Options &options);
+void DrawGui(viewgl::WinState &state, viewgl::Options &options);
 void LoadFonts();
