@@ -1,28 +1,26 @@
 project(${CMAKE_PROJECT_NAME})
 
-add_library(imguigl
-    ../external/imgui/imgui.cpp
-    ../external/imgui/imgui_draw.cpp
-    ../external/imgui/imgui_demo.cpp
-    ../external/imgui/imgui_tables.cpp
-    ../external/imgui/imgui_widgets.cpp
-    ../external/imgui/backends/imgui_impl_glfw.cpp
-    ../external/imgui/backends/imgui_impl_opengl3.cpp)
-
-target_include_directories(imguigl
-    PUBLIC ../external/imgui/ ../external/imgui/backends)
-
 add_library(view
-    ../glad/src/glad.c
-    ../src/camera.cpp
-    ../src/win.cpp
-    ../src/options.cpp
-    ../src/shader.cpp
-    ../src/lights.cpp
-    ../src/texture.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../glad/src/glad.c
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui_draw.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui_demo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui_tables.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui_widgets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/backends/imgui_impl_glfw.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/backends/imgui_impl_opengl3.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/camera.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/win.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/options.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/shader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/lights.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/texture.cpp)
 
 target_include_directories(view
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cxxopts/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/glad)

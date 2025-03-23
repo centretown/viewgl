@@ -21,5 +21,4 @@ target_link_libraries(viewgl
     PRIVATE
     ${LIBS}
     assimp
-    imguigl
     view)

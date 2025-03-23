@@ -1,6 +1,5 @@
 #pragma once
 #include "model.hpp"
-#include <cxxopts.hpp>
 
 #include <filesystem>
 #include <vector>
@@ -14,25 +13,22 @@ const std::string subDir = "";
 
 namespace viewgl {
 struct Options {
-  std::string resourceDir = "../resources";
-  std::string modelType = "stl";
+
+  // input arguments
+  std::string resourceBase = "../resources";
   std::string modelName = "sphereofthedark";
   std::string skyboxName = "islands";
+  std::string modelType = "stl";
 
+  // source paths
   std::filesystem::path modelPath;
   std::filesystem::path skyboxPath;
 
-  std::filesystem::path stlPath;
-  std::filesystem::path objectPath;
-  std::filesystem::path shaderPath;
-  std::filesystem::path skyboxPaths;
-
-  std::vector<std::string> typeList = {"stl", "obj"};
-
-  std::vector<std::filesystem::path> objectList;
-  std::vector<std::filesystem::path> stlList;
-  std::vector<std::filesystem::path> skyboxList;
-  std::vector<std::filesystem::path> shaderList;
+  // selectable locations
+  std::filesystem::path stlDirectory;
+  std::filesystem::path objectDirectory;
+  std::filesystem::path shaderDirectory;
+  std::filesystem::path skyboxDirectory;
 
   float scale = 1.0f;
   Model model;
@@ -40,11 +36,15 @@ struct Options {
 
   glm::vec3 Scale() { return glm::vec3(scale, scale, scale); }
 
+  void DrawGui();
   int LoadModel();
   int LoadSkybox();
   int Parse(const char *title, int argc, const char **argv, bool log = true);
+
+  static float skyboxVertices[];
+  static size_t skyboxVerticesSize;
 };
 
-void FillVector(std::filesystem::path &dir,
-                std::vector<std::filesystem::path> &list, bool log = true);
+void LoadList(std::filesystem::path &dir,
+              std::vector<std::filesystem::path> &list, bool log = true);
 } // namespace viewgl

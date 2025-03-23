@@ -1,8 +1,15 @@
 #include "options.hpp"
+#include <cxxopts.hpp>
 
+#include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <stdlib.h>
 #include <string>
 
+#include "imgui.h"
+#include "mesh.hpp"
+#include "texture.hpp"
 namespace viewgl {
 
 int Options::Parse(const char *title, int argc, const char **argv, bool log) {
@@ -10,14 +17,14 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
   std::unique_ptr<cxxopts::Options> allocated(
       new cxxopts::Options(argv[0], title));
 
-  cxxopts::Options &options = *allocated;
-  options.set_width(150)
+  cxxopts::Options &args = *allocated;
+  args.set_width(150)
       .set_tab_expansion()
       .allow_unrecognised_options()
       .add_options() //
       ("r,resources", "Resource Directory",
        cxxopts::value<std::string>(), //
-       resourceDir)                   //
+       resourceBase)                  //
 
       ("t,type", "Model Type eg. 'stl' 'model'", //
        cxxopts::value<std::string>(),
@@ -33,10 +40,10 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 
       ("h,help", "Print help"); //
 
-  cxxopts::ParseResult result = options.parse(argc, argv);
+  cxxopts::ParseResult result = args.parse(argc, argv);
 
   if (result.count("r")) {
-    resourceDir = result["r"].as<std::string>().c_str();
+    resourceBase = result["r"].as<std::string>().c_str();
   }
 
   if (result.count("o")) {
@@ -57,46 +64,36 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
   else
     dir = modelDir + "/" + modelName;
 
-  modelPath = resourceDir + "/" + dir + "/" + modelName + "." + modelType;
+  modelPath = resourceBase + "/" + dir + "/" + modelName + "." + modelType;
 
-  skyboxPath = resourceDir;
+  skyboxPath = resourceBase;
   skyboxPath /= skyboxDir;
   skyboxPath /= skyboxName;
 
-  shaderPath = resourceDir;
-  shaderPath /= shaderDir;
+  shaderDirectory = resourceBase;
+  shaderDirectory /= shaderDir;
 
-  objectPath = resourceDir + "/" + modelDir;
-  stlPath = resourceDir + "/" + stlDir;
-  skyboxPaths = resourceDir + "/" + skyboxDir;
-
-  for (auto const &dir_entry :
-       std::filesystem::directory_iterator{resourceDir}) {
-    if (log)
-      fprintf(stderr, "%s\n", dir_entry.path().c_str());
-  }
-
-  FillVector(shaderPath, shaderList);
-  FillVector(skyboxPaths, skyboxList);
-  FillVector(objectPath, objectList);
-  FillVector(stlPath, stlList);
+  objectDirectory = resourceBase + "/" + modelDir;
+  stlDirectory = resourceBase + "/" + stlDir;
+  skyboxDirectory = resourceBase + "/" + skyboxDir;
 
   if (log)
     fprintf(stderr,
-            "resourcePath='%s'\n"
-            "modelPath='%s'\n"
-            "skyboxPath='%s'\n"
-            "shaderPath='%s'\n"
-            "objectPath='%s'\n"
-            "stlPath='%s'\n",    //
-            resourceDir.c_str(), //
-            modelPath.c_str(),   //
-            skyboxPath.c_str(),  //
-            shaderPath.c_str(),  //
-            objectPath.c_str(), stlPath.c_str());
+            "resourcePath='%s'\n"    //
+            "modelPath='%s'\n"       //
+            "skyboxPath='%s'\n"      //
+            "shaderPath='%s'\n"      //
+            "objectPath='%s'\n"      //
+            "stlPath='%s'\n",        //
+            resourceBase.c_str(),    //
+            modelPath.c_str(),       //
+            skyboxPath.c_str(),      //
+            shaderDirectory.c_str(), //
+            objectDirectory.c_str(), //
+            stlDirectory.c_str());
 
   if (result.count("help")) {
-    printf("%s", options.help({"", "Group"}).c_str());
+    printf("%s", args.help({"", "Group"}).c_str());
     exit(0);
   }
 
@@ -110,12 +107,112 @@ int Options::LoadModel() {
   return 0;
 }
 
-void FillVector(std::filesystem::path &dir,
-                std::vector<std::filesystem::path> &list, bool log) {
-  for (auto const &dir_entry : std::filesystem::directory_iterator{dir}) {
-    if (log)
-      fprintf(stderr, "%s\n", dir_entry.path().c_str());
-    list.push_back(dir_entry);
-  }
+bool Filter(const std::filesystem::path &entry,
+            const std::vector<std::string> &filter) {
+  for (auto match : filter)
+    if (match == entry)
+      return true;
+  return false;
 }
+
+void SelectFolder(const std::filesystem::path &directory,
+                  std::filesystem::path &current) {
+  std::string suffix = "##";
+  suffix += directory;
+
+  ImGui::Indent();
+  for (auto const &entry : std::filesystem::directory_iterator{directory}) {
+    auto path = entry.path();
+    auto key = path.filename();
+    key += suffix;
+    if (entry.is_directory()) {
+      const bool is_selected = (path == current);
+      if (ImGui::Selectable(key.c_str(), is_selected))
+        current = path;
+      if (is_selected)
+        ImGui::SetItemDefaultFocus();
+    }
+  }
+  ImGui::Unindent();
+}
+
+void SelectFile(const std::filesystem::path &directory,
+                std::filesystem::path &current,
+                const vector<std::string> &filter) {
+  std::string suffix = "##";
+  suffix += directory;
+
+  ImGui::Indent();
+  for (auto const &entry : std::filesystem::directory_iterator{directory}) {
+    auto path = entry.path();
+    auto key = path.filename();
+    key += suffix;
+
+    if (entry.is_regular_file() && Filter(path.extension(), filter)) {
+      const bool is_selected = (path == current);
+      if (ImGui::Selectable(key.c_str(), is_selected))
+        current = path;
+      if (is_selected)
+        ImGui::SetItemDefaultFocus();
+
+    } else if (entry.is_directory()) {
+      if (ImGui::CollapsingHeader(key.c_str(), 0)) {
+        SelectFile(entry.path(), current, filter);
+      }
+    }
+  }
+  ImGui::Unindent();
+}
+
+static std::vector<std::string> stlFilter = {".stl"};
+static std::vector<std::string> objFilter = {".obj", ".dae", ".gltf"};
+
+void Options::DrawGui() {
+  ImFont *font = ImGui::GetFont();
+  float fontSize = font->FontSize;
+  ImGui::Text("Model: %s", modelPath.stem().c_str());
+  ImGui::Indent();
+  if (ImGui::CollapsingHeader("Select##model", 0)) {
+    ImGui::Indent();
+    if (ImGui::CollapsingHeader("STL Drawings", 0)) {
+      SelectFile(stlDirectory, modelPath, stlFilter);
+    }
+    if (ImGui::CollapsingHeader("Objects")) {
+      SelectFile(objectDirectory, modelPath, objFilter);
+    }
+    ImGui::Unindent();
+  }
+  ImGui::Unindent();
+  ImGui::Text("Skybox: %s", skyboxPath.stem().c_str());
+  ImGui::Indent();
+  if (ImGui::CollapsingHeader("Select##skybox", 0)) {
+    if (ImGui::Button("Apply##skybox", ImVec2(fontSize * 16, fontSize + 10))) {
+      skyboxTexture = LoadCubemap(skyboxPath);
+    }
+    SelectFolder(skyboxDirectory, skyboxPath);
+  }
+  ImGui::Unindent();
+}
+
+float Options::skyboxVertices[] = {
+    // positions
+    -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
+
+    -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
+    -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+
+    1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
+
+    -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+
+    -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
+
+    -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
+size_t Options::skyboxVerticesSize = sizeof(skyboxVertices);
+
 } // namespace viewgl

@@ -61,26 +61,6 @@ const char *glsDir = "gls100";
 const char *glsDir = "gls330";
 #endif
 
-float skyboxVertices[] = {
-    // positions
-    -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
-    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
-
-    -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
-    -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
-
-    1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
-
-    -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
-
-    -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
-
-    -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
-    1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
-
 viewgl::WinState state;
 viewgl::Camera camera;
 
@@ -89,7 +69,7 @@ int main(int argc, const char **argv) {
   viewgl::Options options;
   options.Parse("viewgl", argc, argv);
   printf("resourcePath=\"%s\"\n modelPath=\"%s\"\n skyboxPath=\"%s\"\n",
-         options.resourceDir.c_str(), options.modelPath.c_str(),
+         options.resourceBase.c_str(), options.modelPath.c_str(),
          options.skyboxPath.c_str());
 
   GLFWwindow *window = state.InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -123,7 +103,7 @@ int main(int argc, const char **argv) {
   const char *glsl_version = "#version 330 core";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  std::filesystem::path shaderPath = options.shaderPath;
+  std::filesystem::path shaderPath = options.shaderDirectory;
   shaderPath.append(glsDir);
 
   std::filesystem::path vertPath = shaderPath;
@@ -153,8 +133,8 @@ int main(int argc, const char **argv) {
   glGenBuffers(1, &skyboxVBO);
   glBindVertexArray(skyboxVAO);
   glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, options.skyboxVerticesSize,
+               &options.skyboxVertices, GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 
