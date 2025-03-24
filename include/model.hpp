@@ -12,6 +12,7 @@ class Model {
   bool gammaCorrection;
   vector<Texture> textures_loaded;
   vector<Mesh> meshes;
+  const struct aiScene *scene = NULL;
 
 public:
   glm::vec3 min = {0, 0, 0};
@@ -27,6 +28,7 @@ public:
   void Draw(Shader &shader);
   float Scale();
   void MinMax(glm::vec3 vector);
+  void Reload(string const &p, bool gamma = false);
 
 public:
   Model() {}

@@ -4,7 +4,7 @@ cmake_policy(VERSION 3.0...3.28)
 project(viewgl)
 
 # options
-# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 message(STATUS "Host system processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
 IF(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")

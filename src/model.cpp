@@ -1,11 +1,22 @@
 #include "model.hpp"
+#include "assimp/scene.h"
 #include "texture.hpp"
 
-#include <assimp/Importer.hpp>  // C++ importer interface
+// #include <assimp/Importer.hpp>  // C++ importer interface
+#include <assimp/cimport.h>     // Plain-C interface
 #include <assimp/postprocess.h> // Post processing flags
 #include <glm/detail/qualifier.hpp>
 
 namespace viewgl {
+
+void Model::Reload(string const &p, bool gamma) {
+  textures_loaded.clear();
+  meshes.clear();
+  aiReleaseImport(scene);
+  path = p;
+  gammaCorrection = gamma;
+  Load();
+}
 
 void Model::Draw(Shader &shader) {
   for (unsigned int i = 0; i < meshes.size(); i++)
@@ -13,13 +24,13 @@ void Model::Draw(Shader &shader) {
 }
 
 void Model::Load() {
-  Assimp::Importer import;
-  const aiScene *scene =
-      import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+  // Assimp::Importer import;
+  // scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+  scene = aiImportFile(path.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
-  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
+  if (scene == NULL || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !scene->mRootNode) {
-    printf("ERROR::ASSIMP:: %s\n", import.GetErrorString());
+    fprintf(stderr, "ERROR::ASSIMP:: %s\n", aiGetErrorString());
     return;
   }
   directory = path.substr(0, path.find_last_of('/'));

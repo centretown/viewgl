@@ -1,7 +1,5 @@
 project(${CMAKE_PROJECT_NAME})
 
-#set(CMAKE_CXX_FLAGS -DUSE_OPEN_GLES)
-
 add_executable(viewgl
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/drawgui.cpp

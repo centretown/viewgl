@@ -42,6 +42,12 @@ public:
        vector<Texture> textures);
   void Draw(Shader &shader);
 
+  void Reset() {
+    vertices.clear();
+    indices.clear();
+    textures.clear();
+  }
+
 private:
   //  render data
   unsigned int VAO, VBO, EBO;

@@ -170,7 +170,13 @@ static std::vector<std::string> objFilter = {".obj", ".dae", ".gltf"};
 void Options::DrawGui() {
   ImFont *font = ImGui::GetFont();
   float fontSize = font->FontSize;
-  ImGui::Text("Model: %s", modelPath.stem().c_str());
+
+  if (ImGui::Button("Apply Model",
+                    ImVec2(fontSize * 12, fontSize + fontSize / 5))) {
+    model.Reload(modelPath);
+  }
+  ImGui::SameLine();
+  ImGui::Text("%s", modelPath.stem().c_str());
   ImGui::Indent();
   if (ImGui::CollapsingHeader("Select##model", 0)) {
     ImGui::Indent();
@@ -183,12 +189,15 @@ void Options::DrawGui() {
     ImGui::Unindent();
   }
   ImGui::Unindent();
-  ImGui::Text("Skybox: %s", skyboxPath.stem().c_str());
+
+  if (ImGui::Button("Apply Skybox",
+                    ImVec2(fontSize * 12, fontSize + fontSize / 5))) {
+    skyboxTexture = LoadCubemap(skyboxPath);
+  }
+  ImGui::SameLine();
+  ImGui::Text("%s", skyboxPath.stem().c_str());
   ImGui::Indent();
   if (ImGui::CollapsingHeader("Select##skybox", 0)) {
-    if (ImGui::Button("Apply##skybox", ImVec2(fontSize * 16, fontSize + 10))) {
-      skyboxTexture = LoadCubemap(skyboxPath);
-    }
     SelectFolder(skyboxDirectory, skyboxPath);
   }
   ImGui::Unindent();
