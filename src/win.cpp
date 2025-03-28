@@ -71,6 +71,10 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
+#ifdef WEBAPP
+#define USE_OPEN_GLES
+#endif //  WEBAPP
+
 GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   winState = this;
   currentCamera = cam;
@@ -155,6 +159,7 @@ bool WinState::PanelActive() {
     showPanel = !showPanel;
     mouseMenuClicked = false;
   } else {
+#ifndef WEBAPP
     if (glfwJoystickIsGamepad(activeGamepPad)) {
       GLFWgamepadstate gamepadState = {0};
       glfwGetGamepadState(activeGamepPad, &gamepadState);
@@ -165,6 +170,7 @@ bool WinState::PanelActive() {
       } else
         menuButtonPressed = (gamepadState.buttons[menuButton] == GLFW_PRESS);
     }
+#endif // WEBAPP
     if (menuKeyPressed && glfwGetKey(window, menuKey) == GLFW_RELEASE) {
       showPanel = !showPanel;
       menuKeyPressed = false;
@@ -183,6 +189,7 @@ void WinState::ProcessInput(Camera &camera) {
   CameraMovement direction = (CameraMovement)-1;
   float rotationAngleY = camera.RotationAngle();
 
+#ifndef WEBAPP
   if (glfwJoystickIsGamepad(activeGamepPad)) {
     GLFWgamepadstate gamepadState = {0};
     glfwGetGamepadState(activeGamepPad, &gamepadState);
@@ -194,30 +201,31 @@ void WinState::ProcessInput(Camera &camera) {
       rotationAngleY -= 1.0;
     if (gamepadState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS)
       rotationAngleY += 1.0;
-
+    //
     float value = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
     if (value < -leftDeadzoneX || value > leftDeadzoneX)
       rotationAngleY += value;
     value = gamepadState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
     if (value < -leftDeadzoneX || value > leftDeadzoneX)
       direction = (value > 0) ? CAMERA_FORWARD : CAMERA_BACKWARD;
-
+    //
     float moveX = 0.0f;
     float moveY = 0.0f;
     value = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
     if (value < -rightDeadzoneX || value > rightDeadzoneX)
       moveX = value;
-
+    //
     value = gamepadState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
     if (value < -rightDeadzoneY || value > rightDeadzoneY)
       moveY = value;
-
+    //
     if (moveY != 0.0f || moveX != 0.0f) {
       // printf("%f,%f\n", moveX, moveY);
       camera.ProcessMovement(-moveX / camera.Sensitivity(),
                              moveY / camera.Sensitivity());
     }
   }
+#endif // WEBAPP
 
   if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     direction = CAMERA_BACKWARD;

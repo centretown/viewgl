@@ -2,12 +2,17 @@
 #include "assimp/scene.h"
 #include "texture.hpp"
 
-// #include <assimp/Importer.hpp>  // C++ importer interface
 #include <assimp/cimport.h>     // Plain-C interface
 #include <assimp/postprocess.h> // Post processing flags
 #include <glm/detail/qualifier.hpp>
 
 namespace viewgl {
+
+std::string Model::resourceDirectory = "../resources";
+std::string Model::GetResourceDirectory() { return resourceDirectory; }
+void Model::SetResourceDirectory(std::string directory) {
+  resourceDirectory = directory;
+}
 
 void Model::Reload(string const &p, bool gamma) {
   textures_loaded.clear();
@@ -24,8 +29,6 @@ void Model::Draw(Shader &shader) {
 }
 
 void Model::Load() {
-  // Assimp::Importer import;
-  // scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
   scene = aiImportFile(path.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
   if (scene == NULL || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
@@ -39,27 +42,54 @@ void Model::Load() {
 
   if (meshes.size() == 1 && textures_loaded.size() == 0) {
     Mesh &mesh = meshes[0];
-    // loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
     TextureOptions options = {
         GL_LINEAR,
         GL_LINEAR,
         GL_REPEAT,
         GL_REPEAT,
     };
-    string filename = "assets/textures/red.png";
+    string filename = resourceDirectory;
+    filename += "/textures/metal.png";
+
     Texture texture = {0};
     texture.id = MakeTexture(filename.c_str(), &options);
+    // texture.type = "texture_specular";
     texture.type = "texture_diffuse";
     texture.path = filename;
     mesh.textures.push_back(texture);
     textures_loaded.push_back(texture);
   }
 
-  printf("Model:\n\t# of meshes = %ld\n\t# of textures = %ld\n", meshes.size(),
-         textures_loaded.size());
-  printf("Bounding Box min={x=%.2f, y=%.2f, z=%.2f} max={x=%.2f, y=%.2f, "
-         "z=%.2f}\n",
-         min.x, min.y, min.z, max.x, max.y, max.z);
+  fprintf(stderr,
+          "Model:\n\t# of meshes = %ld\n\t# of textures = %ld\n"
+          "material count=%d\n",
+          meshes.size(), textures_loaded.size(), scene->mNumMaterials);
+  fprintf(stderr,
+          "Bounding Box min={x=%.2f, y=%.2f, z=%.2f} max={x=%.2f, y=%.2f, "
+          "z=%.2f}\n",
+          min.x, min.y, min.z, max.x, max.y, max.z);
+  dump();
+}
+
+void Model::dump() {
+  for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+    aiMesh *mesh = scene->mMeshes[i];
+    fprintf(stderr,
+            "#:'%d' mPrimitiveTypes=%d  mNumVertices=%d  mNumVertices=%d\n", i,
+            mesh->mPrimitiveTypes, mesh->mNumVertices, mesh->mNumVertices);
+  }
+
+  for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
+    auto mat = scene->mMaterials[i];
+    aiString name = mat->GetName();
+    fprintf(stderr, "#:'%d' Material Name = '%s' Texture count=%d\n", i,
+            name.data, mat->GetTextureCount(aiTextureType_NONE));
+    for (int texType = aiTextureType_NONE; texType < aiTextureType_TRANSMISSION;
+         texType++) {
+      fprintf(stderr, "Texture Type = '%d' Texture count=%d\n", texType,
+              mat->GetTextureCount((aiTextureType)texType));
+    }
+  }
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene) {
@@ -154,13 +184,6 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
                                             string typeName) {
   vector<Texture> textures;
-  TextureOptions options = {
-      GL_LINEAR_MIPMAP_LINEAR,
-      GL_LINEAR,
-      GL_REPEAT,
-      GL_REPEAT,
-  };
-
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
@@ -173,6 +196,13 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
       }
     }
     if (!skip) { // if texture hasn't been loaded already, load it
+      TextureOptions options = {
+          GL_LINEAR_MIPMAP_LINEAR,
+          GL_LINEAR,
+          GL_REPEAT,
+          GL_REPEAT,
+      };
+
       string filename = directory + '/' + str.C_Str();
       Texture texture = {0};
       texture.id = MakeTexture(filename.c_str(), &options);

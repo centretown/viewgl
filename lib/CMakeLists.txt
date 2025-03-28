@@ -1,5 +1,7 @@
 project(${CMAKE_PROJECT_NAME})
 
+# set(CMAKE_CXX_FLAGS -DIMGUI_IMPL_OPENGL_ES2)
+
 add_library(view
     ${CMAKE_CURRENT_SOURCE_DIR}/../glad/src/glad.c
 
@@ -21,6 +23,12 @@ add_library(view
 target_include_directories(view
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../external/assimpjs/assimp/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cxxopts/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/glad)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+    add_compile_definitions(WEBAPP)
+endif()

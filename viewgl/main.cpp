@@ -71,7 +71,7 @@ int main(int argc, const char **argv) {
   printf("resourcePath=\"%s\"\n modelPath=\"%s\"\n skyboxPath=\"%s\"\n",
          options.resourceBase.c_str(), options.modelPath.c_str(),
          options.skyboxPath.c_str());
-
+  viewgl::Model::SetResourceDirectory(options.resourceBase);
   GLFWwindow *window = state.InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
   if (window == NULL) {
     printf("Failed to create GLFW window\n");
@@ -100,7 +100,11 @@ int main(int argc, const char **argv) {
   ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
 #endif
 
+#ifdef USE_OPEN_GLES
+  const char *glsl_version = "#version 100";
+#else
   const char *glsl_version = "#version 330 core";
+#endif
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   std::filesystem::path shaderPath = options.shaderDirectory;
@@ -164,7 +168,7 @@ int main(int argc, const char **argv) {
     shader.setMat4("projection", projection);
     shader.setMat4("view", view);
     shader.setVec3("cameraPos", camera.position);
-    shader.setInt("refraction", 1);
+    shader.setInt("op", 0);
     shader.setFloat("refractionIndex", state.refractionIndex);
 
     glm::mat4 model = glm::mat4(1.0f);

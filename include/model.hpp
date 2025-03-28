@@ -8,11 +8,11 @@
 namespace viewgl {
 
 class Model {
-  string path;
+  std::string path;
   bool gammaCorrection;
   vector<Texture> textures_loaded;
   vector<Mesh> meshes;
-  const struct aiScene *scene = NULL;
+  const aiScene *scene = NULL;
 
 public:
   glm::vec3 min = {0, 0, 0};
@@ -28,6 +28,7 @@ public:
   void Draw(Shader &shader);
   float Scale();
   void MinMax(glm::vec3 vector);
+  void dump();
   void Reload(string const &p, bool gamma = false);
 
 public:
@@ -39,5 +40,9 @@ public:
     path = p;
     gammaCorrection = gamma;
   }
+
+  static std::string resourceDirectory;
+  static std::string GetResourceDirectory();
+  static void SetResourceDirectory(std::string directory);
 };
 } // namespace viewgl
