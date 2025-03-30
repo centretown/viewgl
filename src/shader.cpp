@@ -1,4 +1,5 @@
 #include "shader.hpp"
+#include <cerrno>
 #include <memory>
 #include <stdio.h>
 #include <string.h>
@@ -7,9 +8,9 @@ namespace viewgl {
 
 int Shader::LoadFile(const char *path, long &size,
                      std::unique_ptr<char[]> &uptr) {
-  FILE *file = fopen(path, "r");
+  FILE *file = fopen(path, "rb");
   if (file == NULL) {
-    printf("unable to open shader program. '%s' %p\n", path, path);
+    printf("unable to open shader program. '%s' %s\n", path, strerror(errno));
     return SHADER_BUILD_FAIL;
   }
 

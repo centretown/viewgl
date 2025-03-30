@@ -72,8 +72,18 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 #ifdef WEBAPP
-#define USE_OPEN_GLES
+#define USE_OPENGL_ES2
 #endif //  WEBAPP
+
+#if defined(USE_OPENGL_ES2)
+#define IMGUI_IMPL_OPENGL_ES2
+#elif defined(USE_OPENGL_ES3)
+#define IMGUI_IMPL_OPENGL_ES3
+#elif defined(USE_OPENGL_GL320)
+#define IMGUI_IMPL_OPENGL_GL320
+#else
+#define IMGUI_IMPL_OPENGL_GL330
+#endif //  USE_OPENGL_ES2
 
 GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   winState = this;
@@ -82,67 +92,55 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   Resize(w, h);
   glfwInit();
 
-#ifdef USE_OPEN_GLES
-  const char *glsl_version = "#version 100";
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
-  if (!window) {
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-    window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
-    if (!window) {
-      glfwTerminate();
-      exit(EXIT_FAILURE);
-    }
-  }
-#else
 #if defined(IMGUI_IMPL_OPENGL_ES2)
   // GL ES 2.0 + GLSL 100 (WebGL 1.0)
-  const char *glsl_version = "#version 100";
+  glslVersion = "#version 100";
+  glsDirectory = "gls100";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #elif defined(IMGUI_IMPL_OPENGL_ES3)
   // GL ES 3.0 + GLSL 300 es (WebGL 2.0)
-  const char *glsl_version = "#version 300 es";
+  glslVersion = "#version 300 es";
+  glsDirectory = "gls300";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #elif defined(__APPLE__)
   // GL 3.2 + GLSL 150
-  const char *glsl_version = "#version 150";
+  glslVersion = "#version 150";
+  glsDirectory = "gls300";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
 #elif defined(IMGUI_IMPL_OPENGL_GL320)
   // GL 3.0 + GLSL 130
-  const char *glsl_version = "#version 130";
+  glslVersion = "#version 130";
+  glsDirectory = "gls300";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+
   // only glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // 3.0+ only
 #else
-  const char *glsl_version = "#version 330";
+  glslVersion = "#version 330";
+  glsDirectory = "gls330";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif // IMGUI_IMPL_OPENGL_ES2
-  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
+  window = glfwCreateWindow(width, height, glslVersion, NULL, NULL);
   if (window == NULL) {
     return window;
   }
-#endif // USE_OPEN_GLES
 
-#ifdef __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
-  if (window == NULL) {
-    return window;
-  }
-#endif
+  // #ifdef __APPLE__
+  //   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  //   window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
+  //   if (window == NULL) {
+  //     return window;
+  //   }
+  // #endif
 
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);

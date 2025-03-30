@@ -43,16 +43,17 @@ void DrawGui(viewgl::WinState &state, viewgl::Options &options) {
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void LoadFonts() {
+void LoadFonts(std::string base) {
   ImGuiIO &io = ImGui::GetIO();
   io.Fonts->AddFontDefault();
-  const char *fontLocation = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+  std::string fontLocation = base + "/fonts/DejaVuSans.ttf";
+  printf("fontLocation %s\n", fontLocation.c_str());
   float sizes[] = {
       16.0f, 18.0f, 20.0f, 22.0f, 24.0f, 28.0f, 32.0f,
   };
   ImFont *font;
   for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
-    font = io.Fonts->AddFontFromFileTTF(fontLocation, sizes[i]);
+    font = io.Fonts->AddFontFromFileTTF(fontLocation.c_str(), sizes[i]);
     if (font && sizes[i] == 20.0f)
       io.FontDefault = font;
   }

@@ -26,6 +26,8 @@ struct WinState {
   float lastFrame = 0.0f; // Time of last frame
 
   GLFWwindow *InitWindow(Camera *camera, int width, int height);
+  const char *glslVersion = NULL;
+  const char *glsDirectory = "gls330";
 
   void Resize(int w, int h) {
     width = static_cast<float>(w);

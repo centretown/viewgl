@@ -14,6 +14,7 @@ namespace viewgl {
 
 int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 
+#ifndef WEBAPP
   std::unique_ptr<cxxopts::Options> allocated(
       new cxxopts::Options(argv[0], title));
 
@@ -57,6 +58,7 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
   if (result.count("t")) {
     modelType = result["t"].as<std::string>();
   }
+#endif // #ifndef WEBAPP
 
   std::string dir;
   if (modelType == "stl")
@@ -77,25 +79,25 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
   stlDirectory = resourceBase + "/" + stlDir;
   skyboxDirectory = resourceBase + "/" + skyboxDir;
 
-  if (log)
-    fprintf(stderr,
-            "resourcePath='%s'\n"    //
-            "modelPath='%s'\n"       //
-            "skyboxPath='%s'\n"      //
-            "shaderPath='%s'\n"      //
-            "objectPath='%s'\n"      //
-            "stlPath='%s'\n",        //
-            resourceBase.c_str(),    //
-            modelPath.c_str(),       //
-            skyboxPath.c_str(),      //
-            shaderDirectory.c_str(), //
-            objectDirectory.c_str(), //
-            stlDirectory.c_str());
+  printf("resourcePath='%s'\n"    //
+         "modelPath='%s'\n"       //
+         "skyboxPath='%s'\n"      //
+         "shaderPath='%s'\n"      //
+         "objectPath='%s'\n"      //
+         "stlPath='%s'\n",        //
+         resourceBase.c_str(),    //
+         modelPath.c_str(),       //
+         skyboxPath.c_str(),      //
+         shaderDirectory.c_str(), //
+         objectDirectory.c_str(), //
+         stlDirectory.c_str());
 
+#ifndef WEBAPP
   if (result.count("help")) {
     printf("%s", args.help({"", "Group"}).c_str());
     exit(0);
   }
+#endif //  #ifndef WEBAPP
 
   return true;
 }

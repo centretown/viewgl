@@ -34,4 +34,5 @@
 build
 build_wasm
 resources
+resources_full
 external

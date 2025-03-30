@@ -15,7 +15,7 @@ namespace viewgl {
 struct Options {
 
   // input arguments
-  std::string resourceBase = "../resources";
+  std::string resourceBase = "/home/dave/src/viewgl/viewgl/resources/";
   std::string modelName = "sphereofthedark";
   std::string skyboxName = "islands";
   std::string modelType = "stl";
@@ -31,6 +31,7 @@ struct Options {
   std::filesystem::path skyboxDirectory;
 
   float scale = 1.0f;
+
   Model model;
   unsigned int skyboxTexture;
 
@@ -45,6 +46,7 @@ struct Options {
   static size_t skyboxVerticesSize;
 };
 
-void LoadList(std::filesystem::path &dir,
-              std::vector<std::filesystem::path> &list, bool log = true);
+// void LoadList(std::filesystem::path &dir,
+//               std::vector<std::filesystem::path> &list, bool log = true);
+
 } // namespace viewgl

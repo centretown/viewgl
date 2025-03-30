@@ -3,14 +3,16 @@ cmake_policy(VERSION 3.0...3.28)
 
 project(viewgl)
 
-# set(CMAKE_C_COMPILER clang)
-# set(CMAKE_C_COMPILER_TARGET ${triple})
-# set(CMAKE_CXX_COMPILER clang++)
-# set(CMAKE_CXX_COMPILER_TARGET ${triple})
+# WEBAPP
+# USE_OPENGL_ES2
+# USE_OPENGL_ES3
+# USE_OPENGL_GL320
+# USE_OPENGL_GL330
 
 message(STATUS "Host system processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
 IF(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")
     set(CMAKE_CXX_FLAGS -DUSE_OPEN_GLES)
+    # add_compile_definitions(USE_OPENGL_ES2)
 ENDIF()
 
 set(CMAKE_CXX_STANDARD 17) # this does nothing for MSVC, use target_compile_options below
@@ -21,16 +23,9 @@ IF(NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
+# is this being used?
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
- "${CMAKE_SOURCE_DIR}/cmake/modules/")
-
-if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
-    # find the required packages
-    # find_package(GLM REQUIRED)
-    # message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
-    # find_package(GLFW3 REQUIRED)
-    # message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
-endif ()
+  "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 #if(UNIX AND NOT APPLE)
 if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")

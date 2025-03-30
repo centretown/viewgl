@@ -3,7 +3,6 @@ project(${CMAKE_PROJECT_NAME})
 # set(CMAKE_CXX_FLAGS -DIMGUI_IMPL_OPENGL_ES2)
 
 add_library(view
-    ${CMAKE_CURRENT_SOURCE_DIR}/../glad/src/glad.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/imgui/imgui_draw.cpp
