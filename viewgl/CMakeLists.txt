@@ -15,10 +15,10 @@ add_executable(viewgl
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -sUSE_GLFW=3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sUSE_GLFW=3")
-    add_link_options("-sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2")
+    # add_link_options("-sFULL_ES3 -sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2")
     add_compile_definitions(WEBAPP E)
     set_target_properties(viewgl PROPERTIES LINK_FLAGS
-        "--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/resources")
+        "-sFULL_ES3 -sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
 target_include_directories(viewgl
