@@ -12,6 +12,18 @@
 #include "texture.hpp"
 namespace viewgl {
 
+// std::string resourceBase = "/home/dave/src/viewgl/run/resources/";
+// std::string modelName = "sphereofthedark";
+// std::string skyboxName = "islands";
+// std::string modelType = "stl";
+
+const std::string shaderDir = "shaders";
+const std::string textureDir = "textures";
+const std::string modelDir = "objects";
+const std::string skyboxDir = "skybox";
+const std::string stlDir = "stl";
+const std::string subDir = "";
+
 int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 
 #ifndef WEBAPP
@@ -75,9 +87,9 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
   shaderDirectory = resourceBase;
   shaderDirectory /= shaderDir;
 
-  objectDirectory = resourceBase + "/" + modelDir;
-  stlDirectory = resourceBase + "/" + stlDir;
-  skyboxDirectory = resourceBase + "/" + skyboxDir;
+  objectDirectory = resourceBase + modelDir;
+  stlDirectory = resourceBase + stlDir;
+  skyboxDirectory = resourceBase + skyboxDir;
 
   printf("resourcePath='%s'\n"    //
          "modelPath='%s'\n"       //
@@ -103,7 +115,7 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 }
 
 int Options::LoadModel() {
-  model.SetPath(modelPath);
+  model.SetPath(modelPath, resourceBase);
   model.Load();
   scale = model.Scale();
   return 0;

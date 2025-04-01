@@ -18,7 +18,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
     # add_link_options("-sFULL_ES3 -sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2")
     add_compile_definitions(WEBAPP E)
     set_target_properties(viewgl PROPERTIES LINK_FLAGS
-        "-sFULL_ES3 -sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/resources")
+        "-sASYNCIFY --use-port=contrib.glfw3 -sFULL_ES3 -sINITIAL_HEAP=1024MB -sMAX_WEBGL_VERSION=2 --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/resources")
 endif()
 
 target_include_directories(viewgl
@@ -31,8 +31,17 @@ target_include_directories(viewgl
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cxxopts/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/glad)
 
-target_link_libraries(viewgl
+if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+    target_link_libraries(viewgl
     PRIVATE
     ${LIBS}
     assimp
     view)
+else()
+    target_link_libraries(viewgl
+    PRIVATE
+    ${LIBS}
+    glfw
+    assimp
+    view)
+endif()

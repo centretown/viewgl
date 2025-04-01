@@ -2,20 +2,12 @@
 #include "model.hpp"
 
 #include <filesystem>
-#include <vector>
-
-const std::string shaderDir = "shaders";
-const std::string textureDir = "textures";
-const std::string modelDir = "objects";
-const std::string skyboxDir = "skybox";
-const std::string stlDir = "stl";
-const std::string subDir = "";
 
 namespace viewgl {
 struct Options {
 
   // input arguments
-  std::string resourceBase = "/home/dave/src/viewgl/viewgl/resources/";
+  std::string resourceBase = "/home/dave/src/viewgl/run/resources/";
   std::string modelName = "sphereofthedark";
   std::string skyboxName = "islands";
   std::string modelType = "stl";

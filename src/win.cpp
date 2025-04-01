@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include <cstdio>
+#include <errno.h>
 
 namespace viewgl {
 
@@ -71,8 +72,34 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
+void error_callback(int errcode, const char *message) {
+  printf("error code '%d' message: '%s'\n", errno, message);
+}
+
+void handleError() {
+  int code = glfwGetError(NULL);
+  switch (code) {
+  case GLFW_NOT_INITIALIZED:
+    printf("code = '%d': GLFW_NOT_INITIALIZED\n", code);
+  case GLFW_INVALID_ENUM:
+    printf("code = '%d': GLFW_INVALID_ENUM\n", code);
+  case GLFW_INVALID_VALUE:
+    printf("code = '%d': GLFW_INVALID_VALUE\n", code);
+  case GLFW_API_UNAVAILABLE:
+    printf("code = '%d': GLFW_API_UNAVAILABLE\n", code);
+  case GLFW_VERSION_UNAVAILABLE:
+    printf("code = '%d': GLFW_VERSION_UNAVAILABLE\n", code);
+  case GLFW_FORMAT_UNAVAILABLE:
+    printf("code = '%d': GLFW_FORMAT_UNAVAILABLE\n", code);
+  case GLFW_NO_WINDOW_CONTEXT:
+    printf("code = '%d': GLFW_NO_WINDOW_CONTEXT\n", code);
+  case GLFW_PLATFORM_ERROR:
+    printf("code = '%d': GLFW_PLATFORM_ERROR\n", code);
+  }
+}
+
 #ifdef WEBAPP
-#define USE_OPENGL_ES2
+#define USE_OPENGL_ES3
 #endif //  WEBAPP
 
 #if defined(USE_OPENGL_ES2)
@@ -102,7 +129,8 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
 #elif defined(IMGUI_IMPL_OPENGL_ES3)
   // GL ES 3.0 + GLSL 300 es (WebGL 2.0)
   glslVersion = "#version 300 es";
-  glsDirectory = "gls300";
+  glsDirectory = "gls100";
+  // glsDirectory = "gls300";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -129,19 +157,17 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif // IMGUI_IMPL_OPENGL_ES2
+
+  printf("glsl version: '%s' shader directory: '%s'", glslVersion,
+         glsDirectory);
+
   window = glfwCreateWindow(width, height, glslVersion, NULL, NULL);
   if (window == NULL) {
+    handleError();
     return window;
   }
 
-  // #ifdef __APPLE__
-  //   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  //   window = glfwCreateWindow(width, height, glsl_version, NULL, NULL);
-  //   if (window == NULL) {
-  //     return window;
-  //   }
-  // #endif
-
+  glfwSetErrorCallback(error_callback);
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -157,7 +183,7 @@ bool WinState::PanelActive() {
     showPanel = !showPanel;
     mouseMenuClicked = false;
   } else {
-#ifndef WEBAPP
+    // #ifndef WEBAPP
     if (glfwJoystickIsGamepad(activeGamepPad)) {
       GLFWgamepadstate gamepadState = {0};
       glfwGetGamepadState(activeGamepPad, &gamepadState);
@@ -168,7 +194,7 @@ bool WinState::PanelActive() {
       } else
         menuButtonPressed = (gamepadState.buttons[menuButton] == GLFW_PRESS);
     }
-#endif // WEBAPP
+    // #endif // WEBAPP
     if (menuKeyPressed && glfwGetKey(window, menuKey) == GLFW_RELEASE) {
       showPanel = !showPanel;
       menuKeyPressed = false;
@@ -187,7 +213,7 @@ void WinState::ProcessInput(Camera &camera) {
   CameraMovement direction = (CameraMovement)-1;
   float rotationAngleY = camera.RotationAngle();
 
-#ifndef WEBAPP
+  // #ifndef WEBAPP
   if (glfwJoystickIsGamepad(activeGamepPad)) {
     GLFWgamepadstate gamepadState = {0};
     glfwGetGamepadState(activeGamepPad, &gamepadState);
@@ -223,7 +249,7 @@ void WinState::ProcessInput(Camera &camera) {
                              moveY / camera.Sensitivity());
     }
   }
-#endif // WEBAPP
+  // #endif // WEBAPP
 
   if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     direction = CAMERA_BACKWARD;

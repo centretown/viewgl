@@ -6,13 +6,9 @@
 #include <assimp/postprocess.h> // Post processing flags
 #include <glm/detail/qualifier.hpp>
 
-namespace viewgl {
+#include <filesystem>
 
-std::string Model::resourceDirectory = "../resources";
-std::string Model::GetResourceDirectory() { return resourceDirectory; }
-void Model::SetResourceDirectory(std::string directory) {
-  resourceDirectory = directory;
-}
+namespace viewgl {
 
 void Model::Reload(string const &p, bool gamma) {
   textures_loaded.clear();
@@ -29,6 +25,7 @@ void Model::Draw(Shader &shader) {
 }
 
 void Model::Load() {
+
   scene = aiImportFile(path.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
   if (scene == NULL || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
@@ -48,8 +45,8 @@ void Model::Load() {
         GL_REPEAT,
         GL_REPEAT,
     };
-    string filename = resourceDirectory;
-    filename += "/textures/metal.png";
+
+    std::filesystem::path filename = resourcePath + "textures/metal.png";
 
     Texture texture = {0};
     texture.id = MakeTexture(filename.c_str(), &options);
@@ -68,7 +65,9 @@ void Model::Load() {
           "Bounding Box min={x=%.2f, y=%.2f, z=%.2f} max={x=%.2f, y=%.2f, "
           "z=%.2f}\n",
           min.x, min.y, min.z, max.x, max.y, max.z);
+#ifdef DEBUG
   dump();
+#endif
 }
 
 void Model::dump() {

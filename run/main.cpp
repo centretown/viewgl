@@ -26,6 +26,10 @@
 #include "texture.hpp"
 #include "win.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 #include <assimp/Importer.hpp>  // C++ importer interface
 #include <assimp/postprocess.h> // Post processing flags
 #include <assimp/scene.h>       // Output data structure
@@ -56,35 +60,33 @@ GLFWwindow *window;
 viewgl::Options options;
 unsigned int skyboxVAO, skyboxVBO;
 
-#ifdef WEBAPP
-#include <emscripten/emscripten.h>
-void showfiles(std::filesystem::path p) {
-  for (auto const &dir_entry : std::filesystem::directory_iterator{p}) {
-    printf("%s\n", dir_entry.path().c_str());
-    if (dir_entry.is_directory()) {
-      showfiles(dir_entry);
-    }
-  }
-}
-#endif
+// #ifdef WEBAPP
+// #include <emscripten/emscripten.h>
+// void showfiles(std::filesystem::path p) {
+// for (auto const &dir_entry : std::filesystem::directory_iterator{p}) {
+// printf("%s\n", dir_entry.path().c_str());
+// if (dir_entry.is_directory()) {
+// showfiles(dir_entry);
+// }
+// }
+// }
+// display the file system
+// #ifdef WEBAPP
+// std::filesystem::path p("/");
+// printf("files...\n");
+// showfiles(p);
+// printf("files end\n\n");
+// #endif
+// #endif
 
 void Loop();
 
 int main(int argc, const char **argv) {
 
-  // display the file system
-#ifdef WEBAPP
-  std::filesystem::path p("/");
-  printf("files...\n");
-  showfiles(p);
-  printf("files end\n\n");
-#endif
-
   options.Parse("viewgl", argc, argv);
   printf("resourcePath=\"%s\"\n modelPath=\"%s\"\n skyboxPath=\"%s\"\n",
          options.resourceBase.c_str(), options.modelPath.c_str(),
          options.skyboxPath.c_str());
-  viewgl::Model::SetResourceDirectory(options.resourceBase);
 
   window = state.InitWindow(&camera, SCREEN_WIDTH, SCREEN_HEIGHT);
   if (window == NULL) {
@@ -191,10 +193,13 @@ int main(int argc, const char **argv) {
 }
 
 void Loop() {
+#ifndef WEBAPP
   if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
     ImGui_ImplGlfw_Sleep(10);
     return;
   }
+#endif // WEBAPP
+
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -235,7 +240,8 @@ void Loop() {
     glViewport(0, 0, state.width, state.height);
     state.ProcessInput(camera);
   }
-
+#ifndef WEBAPP
   glfwSwapBuffers(window);
+#endif // WEBAPP
   glfwPollEvents();
 }
