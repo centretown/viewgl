@@ -11,7 +11,7 @@ project(viewgl)
 
 message(STATUS "Host system processor: ${CMAKE_HOST_SYSTEM_PROCESSOR}")
 IF(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-    set(CMAKE_CXX_FLAGS -DUSE_OPEN_GLES)
+    set(CMAKE_CXX_FLAGS -DUSE_OPENGL_ES2)
     # add_compile_definitions(USE_OPENGL_ES2)
 ENDIF()
 

@@ -30,7 +30,7 @@ void Model::Load() {
 
   if (scene == NULL || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !scene->mRootNode) {
-    fprintf(stderr, "ERROR::ASSIMP:: %s\n", aiGetErrorString());
+    printf("ERROR::ASSIMP:: %s\n", aiGetErrorString());
     return;
   }
   directory = path.substr(0, path.find_last_of('/'));
@@ -57,14 +57,12 @@ void Model::Load() {
     textures_loaded.push_back(texture);
   }
 
-  fprintf(stderr,
-          "Model:\n\t# of meshes = %ld\n\t# of textures = %ld\n"
-          "material count=%d\n",
-          meshes.size(), textures_loaded.size(), scene->mNumMaterials);
-  fprintf(stderr,
-          "Bounding Box min={x=%.2f, y=%.2f, z=%.2f} max={x=%.2f, y=%.2f, "
-          "z=%.2f}\n",
-          min.x, min.y, min.z, max.x, max.y, max.z);
+  printf("Model:\n\t# of meshes = %ld\n\t# of textures = %ld\n"
+         "material count=%d\n",
+         meshes.size(), textures_loaded.size(), scene->mNumMaterials);
+  printf("Bounding Box min={x=%.2f, y=%.2f, z=%.2f} max={x=%.2f, y=%.2f, "
+         "z=%.2f}\n",
+         min.x, min.y, min.z, max.x, max.y, max.z);
 #ifdef DEBUG
   dump();
 #endif
@@ -73,20 +71,19 @@ void Model::Load() {
 void Model::dump() {
   for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
     aiMesh *mesh = scene->mMeshes[i];
-    fprintf(stderr,
-            "#:'%d' mPrimitiveTypes=%d  mNumVertices=%d  mNumVertices=%d\n", i,
-            mesh->mPrimitiveTypes, mesh->mNumVertices, mesh->mNumVertices);
+    printf("#:'%d' mPrimitiveTypes=%d  mNumVertices=%d  mNumVertices=%d\n", i,
+           mesh->mPrimitiveTypes, mesh->mNumVertices, mesh->mNumVertices);
   }
 
   for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
     auto mat = scene->mMaterials[i];
     aiString name = mat->GetName();
-    fprintf(stderr, "#:'%d' Material Name = '%s' Texture count=%d\n", i,
-            name.data, mat->GetTextureCount(aiTextureType_NONE));
+    printf("#:'%d' Material Name = '%s' Texture count=%d\n", i, name.data,
+           mat->GetTextureCount(aiTextureType_NONE));
     for (int texType = aiTextureType_NONE; texType < aiTextureType_TRANSMISSION;
          texType++) {
-      fprintf(stderr, "Texture Type = '%d' Texture count=%d\n", texType,
-              mat->GetTextureCount((aiTextureType)texType));
+      printf("Texture Type = '%d' Texture count=%d\n", texType,
+             mat->GetTextureCount((aiTextureType)texType));
     }
   }
 }

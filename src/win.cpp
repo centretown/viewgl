@@ -158,7 +158,7 @@ GLFWwindow *WinState::InitWindow(Camera *cam, int w, int h) {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif // IMGUI_IMPL_OPENGL_ES2
 
-  printf("glsl version: '%s' shader directory: '%s'", glslVersion,
+  printf("glsl version: '%s' shader directory: '%s'\n", glslVersion,
          glsDirectory);
 
   window = glfwCreateWindow(width, height, glslVersion, NULL, NULL);
