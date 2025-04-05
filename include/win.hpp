@@ -5,7 +5,7 @@
 
 namespace viewgl {
 
-const float PanelWidthMin = 25.0;
+const float PanelWidthMin = 20.0;
 const float PanelWidthMax = 50.0;
 
 const float RefractionIndexMin = 1.0;

@@ -7,9 +7,6 @@
 #include <stdlib.h>
 #include <string>
 
-#include "imgui.h"
-#include "mesh.hpp"
-#include "texture.hpp"
 namespace viewgl {
 
 // std::string resourceBase = "/home/dave/src/viewgl/run/resources/";
@@ -112,109 +109,6 @@ int Options::Parse(const char *title, int argc, const char **argv, bool log) {
 #endif //  #ifndef WEBAPP
 
   return true;
-}
-
-int Options::LoadModel() {
-  model.SetPath(modelPath, resourceBase);
-  model.Load();
-  scale = model.Scale();
-  return 0;
-}
-
-bool Filter(const std::filesystem::path &entry,
-            const std::vector<std::string> &filter) {
-  for (auto match : filter)
-    if (match == entry)
-      return true;
-  return false;
-}
-
-void SelectFolder(const std::filesystem::path &directory,
-                  std::filesystem::path &current) {
-  std::string suffix = "##";
-  suffix += directory;
-
-  ImGui::Indent();
-  for (auto const &entry : std::filesystem::directory_iterator{directory}) {
-    auto path = entry.path();
-    auto key = path.filename();
-    key += suffix;
-    if (entry.is_directory()) {
-      const bool is_selected = (path == current);
-      if (ImGui::Selectable(key.c_str(), is_selected))
-        current = path;
-      if (is_selected)
-        ImGui::SetItemDefaultFocus();
-    }
-  }
-  ImGui::Unindent();
-}
-
-void SelectFile(const std::filesystem::path &directory,
-                std::filesystem::path &current,
-                const vector<std::string> &filter) {
-  std::string suffix = "##";
-  suffix += directory;
-
-  ImGui::Indent();
-  for (auto const &entry : std::filesystem::directory_iterator{directory}) {
-    auto path = entry.path();
-    auto key = path.filename();
-    key += suffix;
-
-    if (entry.is_regular_file() && Filter(path.extension(), filter)) {
-      const bool is_selected = (path == current);
-      if (ImGui::Selectable(key.c_str(), is_selected))
-        current = path;
-      if (is_selected)
-        ImGui::SetItemDefaultFocus();
-
-    } else if (entry.is_directory()) {
-      if (ImGui::CollapsingHeader(key.c_str(), 0)) {
-        SelectFile(entry.path(), current, filter);
-      }
-    }
-  }
-  ImGui::Unindent();
-}
-
-static std::vector<std::string> stlFilter = {".stl"};
-static std::vector<std::string> objFilter = {".obj", ".dae", ".gltf"};
-
-void Options::DrawGui() {
-  ImFont *font = ImGui::GetFont();
-  float fontSize = font->FontSize;
-
-  if (ImGui::Button("Apply Model",
-                    ImVec2(fontSize * 12, fontSize + fontSize / 5))) {
-    model.Reload(modelPath);
-  }
-  ImGui::SameLine();
-  ImGui::Text("%s", modelPath.stem().c_str());
-  ImGui::Indent();
-  if (ImGui::CollapsingHeader("Select##model", 0)) {
-    ImGui::Indent();
-    if (ImGui::CollapsingHeader("STL Drawings", 0)) {
-      SelectFile(stlDirectory, modelPath, stlFilter);
-    }
-    if (ImGui::CollapsingHeader("Objects")) {
-      SelectFile(objectDirectory, modelPath, objFilter);
-    }
-    ImGui::Unindent();
-  }
-  ImGui::Unindent();
-
-  if (ImGui::Button("Apply Skybox",
-                    ImVec2(fontSize * 12, fontSize + fontSize / 5))) {
-    skyboxTexture = LoadCubemap(skyboxPath);
-  }
-  ImGui::SameLine();
-  ImGui::Text("%s", skyboxPath.stem().c_str());
-  ImGui::Indent();
-  if (ImGui::CollapsingHeader("Select##skybox", 0)) {
-    SelectFolder(skyboxDirectory, skyboxPath);
-  }
-  ImGui::Unindent();
 }
 
 float Options::skyboxVertices[] = {

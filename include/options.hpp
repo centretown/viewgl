@@ -1,7 +1,7 @@
 #pragma once
-#include "model.hpp"
 
 #include <filesystem>
+#include <glm/ext/matrix_float4x4.hpp>
 
 namespace viewgl {
 struct Options {
@@ -22,16 +22,8 @@ struct Options {
   std::filesystem::path shaderDirectory;
   std::filesystem::path skyboxDirectory;
 
-  float scale = 1.0f;
-
-  Model model;
-  unsigned int skyboxTexture;
-
-  glm::vec3 Scale() { return glm::vec3(scale, scale, scale); }
-
-  void DrawGui();
-  int LoadModel();
-  int LoadSkybox();
+  // void DrawGui();
+  // int LoadSkybox();
   int Parse(const char *title, int argc, const char **argv, bool log = true);
 
   static float skyboxVertices[];

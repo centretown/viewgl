@@ -1,9 +1,15 @@
 #include "app.hpp"
+#include "draw.hpp"
 #include "texture.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <filesystem>
+
+static std::vector<std::string> stlFilter = {".stl"};
+static std::vector<std::string> objFilter = {".obj", ".dae", ".gltf"};
+static std::vector<std::string> shaderFilter = {".frag"};
 
 void App::Parse(int argc, const char **argv) {
   options.Parse("viewgl", argc, argv);
@@ -17,6 +23,8 @@ GLFWwindow *App::InitWindow(int width, int height) {
   if (window == NULL) {
     printf("Failed to create GLFW window\n");
   }
+  options.shaderDirectory /= state.glsDirectory;
+  printf("shaderDirectory=\"%s\"\n", options.resourceBase.c_str());
   return window;
 }
 
@@ -31,14 +39,10 @@ void App::InitSkyBox() {
                &options.skyboxVertices, GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-
-  printf("modelPath=\"%s\" skyboxPath=\"%s\"\n", options.modelPath.c_str(),
-         options.skyboxPath.c_str());
-
-  options.skyboxTexture = viewgl::LoadCubemap(options.skyboxPath);
+  skyboxTexture = viewgl::LoadCubemap(options.skyboxPath);
 }
 
-void App::LoadModels() { options.LoadModel(); }
+void App::LoadModels() { LoadModel(); }
 
 void App::LoadFonts() {
   auto base = options.resourceBase;
@@ -57,33 +61,33 @@ void App::LoadFonts() {
   }
 }
 
-bool App::LoadShaders() {
-  std::filesystem::path shaderPath = options.shaderDirectory;
-  shaderPath.append(state.glsDirectory);
-  char filename[32] = {0};
+bool fileUpdated(std::filesystem::path &p,
+                 std::filesystem::file_time_type &current) {
+  std::filesystem::file_time_type lastWritten =
+      std::filesystem::last_write_time(p);
+  if (current < lastWritten) {
+    current = lastWritten;
+    return true;
+  }
+  return false;
+}
 
-  for (int i = 0; i < APP_SHADER_COUNT; i++) {
-    AppShader &ash = shaders[i];
-    viewgl::Shader &shader = ash.shader;
-    std::filesystem::path vertPath = shaderPath;
-    snprintf(filename, sizeof(filename), "%s.vert", ash.name.c_str());
-    vertPath.append(filename);
+viewgl::Shader &App::GetShader(std::string &name) {
+  std::filesystem::path vertPath = VertPath(name);
+  std::filesystem::path fragPath = FragPath(name);
 
-    std::filesystem::path fragPath = shaderPath;
-    snprintf(filename, sizeof(filename), "%s.frag", ash.name.c_str());
-    fragPath.append(filename);
-
+  ShaderItem &item = shaders[name];
+  viewgl::Shader &shader = item.shader;
+  if (fileUpdated(vertPath, item.writeTime) ||
+      fileUpdated(fragPath, item.writeTime)) {
     shader.SetPaths(vertPath.c_str(), fragPath.c_str());
     shader.Build();
-    if (!shader.IsValid()) {
-      return false;
-    }
   }
-  return true;
+  return shader;
 }
 
 void App::DrawModel() {
-  viewgl::Shader &depthShader = UseDepthShader();
+  viewgl::Shader &depthShader = DepthShader();
   depthShader.use();
   glm::vec3 axis(0.0f, 1.0f, 0.0f);
   glm::mat4 view = camera.GetViewMatrix(axis);
@@ -96,12 +100,13 @@ void App::DrawModel() {
 
   glm::mat4 model = glm::mat4(1.0f);
   model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-  model = glm::scale(model, options.Scale());
+  model = glm::scale(model, Scale());
   depthShader.setMat4("model", model);
-  options.model.Draw(depthShader);
+  currentModel.Draw(depthShader);
 }
+
 void App::DrawSkybox() {
-  viewgl::Shader &skyboxShader = UseShader(APP_SHADER_SKYBOX);
+  viewgl::Shader &skyboxShader = SkyboxShader();
   skyboxShader.use();
   glm::vec3 axis(0.0f, 1.0f, 0.0f);
   // glm::mat4 view = camera.GetViewMatrix(axis);
@@ -112,7 +117,7 @@ void App::DrawSkybox() {
 
   glBindVertexArray(skyboxVAO);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, options.skyboxTexture);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
   glDrawArrays(GL_TRIANGLES, 0, 36);
   glBindVertexArray(0);
 }
@@ -136,38 +141,67 @@ void App::DrawPanel() {
 
   float fontSize = ImGui::GetFontSize();
   ImGui::SetNextWindowPos(ImVec2(0, 0));
-
   float panelWidth = fontSize * state.panelWidth + state.panelPadding;
-  ImGui::SetNextWindowSize(
-      ImVec2(panelWidth - state.panelPadding, state.height));
+  ImGui::SetNextWindowSize(ImVec2(panelWidth, state.height));
 
   bool bopen = false;
-  if (ImGui::Begin("xxxPanelxxx", &bopen,
+  if (ImGui::Begin("##Panel", &bopen,
                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                        ImGuiWindowFlags_NoCollapse |
                        ImGuiWindowFlags_AlwaysAutoResize)) {
+
+    std::string modelLabel = "Model: ";
+    modelLabel += options.modelPath.stem();
+    ImGui::Checkbox(modelLabel.c_str(), &showModel);
+
+    ImGui::Indent();
+    std::filesystem::path modelPath = options.modelPath;
+    if (ImGui::CollapsingHeader("Select STL Drawing", 0)) {
+      SelectFile(options.stlDirectory, options.modelPath, stlFilter);
+    }
+
+    if (ImGui::CollapsingHeader("Select Object Model")) {
+      SelectFile(options.objectDirectory, options.modelPath, objFilter);
+    }
+
+    if (modelPath != options.modelPath) {
+      currentModel.Reload(options.modelPath);
+    }
+
+    std::filesystem::path shaderPath = FragPath(depthShaderName);
+    if (ImGui::CollapsingHeader("Select Shader File")) {
+      SelectFile(options.shaderDirectory, shaderPath, shaderFilter);
+    }
+
+    if (shaderPath != FragPath(depthShaderName)) {
+      depthShaderName = shaderPath.filename().stem();
+      printf("shaderPath '%s' new depthShaderName '%s'\n", shaderPath.c_str(),
+             depthShaderName.c_str());
+    }
+    ImGui::Unindent();
+
+    std::string skyboxLabel = "Skybox: ";
+    skyboxLabel += options.skyboxPath.stem();
+    ImGui::Checkbox(skyboxLabel.c_str(), &showSkybox);
+    ImGui::Indent();
+    if (ImGui::CollapsingHeader("Select Skybox##skybox")) {
+      ImGui::Indent();
+      auto skyboxPath = options.skyboxPath;
+      SelectFolder(options.skyboxDirectory, options.skyboxPath);
+      if (skyboxPath != options.skyboxPath)
+        skyboxTexture = viewgl::LoadCubemap(options.skyboxPath);
+      ImGui::Unindent();
+    }
+    ImGui::Unindent();
 
     if (ImGui::CollapsingHeader("Settings")) {
       ImGui::SliderFloat("Panel Width", &state.panelWidth,
                          viewgl::PanelWidthMin, viewgl::PanelWidthMax, "%.0f");
 
-      if (ImGui::CollapsingHeader("Depth Shaders")) {
-        for (int i = 0; i < APP_DEPTH_SHADER_COUNT; i++) {
-          const bool is_selected = (depthShader == i);
-          AppShader &ash = shaders[i];
-          if (ImGui::Selectable(ash.name.c_str(), is_selected))
-            depthShader = i;
-          if (is_selected)
-            ImGui::SetItemDefaultFocus();
-        }
-      }
-
       ImGui::SliderFloat("Refraction Index", &state.refractionIndex,
                          viewgl::RefractionIndexMin, viewgl::RefractionIndexMax,
                          "%.1f");
     }
-
-    options.DrawGui();
 
     // always end here.
     if (ImGui::CollapsingHeader("Style Editor"))
@@ -177,4 +211,11 @@ void App::DrawPanel() {
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+int App::LoadModel() {
+  currentModel.SetPath(options.modelPath, options.resourceBase);
+  currentModel.Load();
+  scale = currentModel.Scale();
+  return 0;
 }

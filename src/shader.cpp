@@ -7,21 +7,25 @@
 namespace viewgl {
 
 int Shader::LoadFile(const char *path, long &size,
-                     std::unique_ptr<char[]> &uptr) {
+                     std::unique_ptr<char[]> &unique) {
+  // file_size( const std::filesystem::path& p )
   FILE *file = fopen(path, "rb");
   if (file == NULL) {
     printf("unable to open shader program. '%s' %s\n", path, strerror(errno));
     return SHADER_BUILD_FAIL;
   }
 
+  // determine size
   fseek(file, 0, SEEK_END);
   size = ftell(file);
   fseek(file, 0, SEEK_SET);
-  char *ptr = new char[size + 1];
-  fread(ptr, 1, size, file);
-  ptr[size] = 0;
-  uptr.reset(ptr);
+
+  char *codeBuffer = new char[size + 1];
+  fread(codeBuffer, 1, size, file);
+  codeBuffer[size] = 0;
+  unique.reset(codeBuffer);
   fclose(file);
+
   return SHADER_BUILD_OK;
 }
 

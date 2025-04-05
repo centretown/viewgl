@@ -8,6 +8,7 @@ endif()
 add_executable(viewgl
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/draw.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../glad/src/glad.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/mesh.cpp)

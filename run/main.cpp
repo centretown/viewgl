@@ -54,7 +54,7 @@ int main(int argc, const char **argv) {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     printf("Failed to initialize GLAD\n");
     glfwTerminate();
-    return -1;
+    return 1;
   }
 
   glEnable(GL_DEPTH_TEST);
@@ -75,16 +75,11 @@ int main(int argc, const char **argv) {
 
   ImGui_ImplOpenGL3_Init(app.state.glslVersion);
 
-  if (!app.LoadShaders()) {
-    glfwTerminate();
-    return -1;
-  }
-
   app.LoadFonts();
   app.InitSkyBox();
   app.LoadModels();
 
-  viewgl::Shader &skyboxShader = app.UseShader(APP_SHADER_SKYBOX);
+  viewgl::Shader &skyboxShader = app.SkyboxShader();
   skyboxShader.use();
   skyboxShader.setInt("skybox", 0);
 
@@ -120,11 +115,16 @@ void Loop() {
 
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  app.DrawModel();
+  if (app.showModel) {
+    app.DrawModel();
+  }
 
-  glDepthFunc(GL_LEQUAL);
-  app.DrawSkybox();
-  glDepthFunc(GL_LESS); // set depth function back to default
+  if (app.showSkybox) {
+    glDepthFunc(GL_LEQUAL);
+    app.DrawSkybox();
+    glDepthFunc(GL_LESS);
+  } // set depth function back to default
+
   app.CheckPanel();
 #ifndef WEBAPP
   glfwSwapBuffers(window);

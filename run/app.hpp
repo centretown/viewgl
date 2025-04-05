@@ -1,49 +1,36 @@
 #pragma once
-#include <vector>
+#include <map>
 
+#include "model.hpp"
 #include "options.hpp"
 #include "shader.hpp"
 #include "win.hpp"
 
-enum APP_SHADER : int {
-  APP_SHADER_BASE,
-  APP_SHADER_REFLECT,
-  APP_SHADER_REFRACT,
-  APP_SHADER_SKYBOX,
-  APP_SHADER_COUNT,
-  APP_DEPTH_SHADER_COUNT = APP_SHADER_COUNT - 1,
-};
-
-struct AppShader {
-  std::string name;
+struct ShaderItem {
   viewgl::Shader shader;
-  AppShader(std::string name) : name{name} {}
+  std::filesystem::file_time_type writeTime =
+      std::filesystem::file_time_type::min();
 };
 
 struct App {
-  viewgl::WinState state;
   viewgl::Options options;
   viewgl::Camera camera;
+  viewgl::WinState state;
   GLFWwindow *window = NULL;
+
   unsigned int skyboxVAO;
   unsigned int skyboxVBO;
-  std::vector<AppShader> shaders;
+  std::map<std::string, ShaderItem> shaders;
 
-  // viewgl::Shader shaders[APP_SHADER_COUNT];
-  int depthShader = 0;
+  unsigned int skyboxTexture;
+  viewgl::Model currentModel;
+  float scale = 1.0f;
+  glm::vec3 Scale() { return glm::vec3(scale, scale, scale); }
 
-  App() {
-    // std::vector<AppShader> shaders = {
-    //     {.name = "base"},
-    //     {.name = "refract"},
-    //     {.name = "reflect"},
-    //     {.name = "skybox"},
-    // };
-    shaders.push_back(AppShader("base"));
-    shaders.push_back(AppShader("refract"));
-    shaders.push_back(AppShader("reflect"));
-    shaders.push_back(AppShader("skybox"));
-  }
+  std::string depthShaderName = "base";
+  std::string skyboxShaderName = "skybox";
+  bool showModel = true;
+  bool showSkybox = true;
 
   void Parse(int argc, const char **argv);
   GLFWwindow *InitWindow(int width, int height);
@@ -54,13 +41,18 @@ struct App {
   void CheckPanel();
   void DrawPanel();
 
-  bool LoadShaders();
   void LoadFonts();
   void LoadModels();
+  int LoadModel();
+  int LoadSkybox();
+  viewgl::Shader &GetShader(std::string &name);
 
-  viewgl::Shader &UseShader(int ShaderID) {
-    assert(ShaderID < APP_SHADER_COUNT);
-    return shaders[ShaderID].shader;
+  viewgl::Shader &DepthShader() { return GetShader(depthShaderName); }
+  viewgl::Shader &SkyboxShader() { return GetShader(skyboxShaderName); }
+  std::filesystem::path VertPath(std::string &name) {
+    return options.shaderDirectory / (name + ".vert");
   }
-  viewgl::Shader &UseDepthShader() { return shaders[depthShader].shader; }
+  std::filesystem::path FragPath(std::string &name) {
+    return options.shaderDirectory / (name + ".frag");
+  }
 };
